@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { api } from '../api';
+import { Instagram, Globe } from 'lucide-react';
 import ForgeMindLogo from '../components/ForgeMindLogo.jsx';
 
-export default function AuthPage({ mode, onDone, offline, demo }) {
+export default function AuthPage({ mode, onDone, offline, demo, links }) {
   const setup = mode === 'setup';
   const [f, setF] = useState({ name: '', email: '', password: '' });
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(offline ? 'The server is not answering. Check that Open Forge is running.' : '');
+  const [err, setErr] = useState(offline ? 'The server is not answering. Check that Open Forge AI is running.' : '');
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   async function submit(e) {
@@ -20,9 +21,9 @@ export default function AuthPage({ mode, onDone, offline, demo }) {
   return (
     <div className="authwrap floor">
       <form className="card authcard fa-sheet-in" onSubmit={submit} data-testid={setup ? 'setup-form' : 'login-form'}>
-        <div style={{ width: 96, height: 96, margin: '0 auto 6px' }}><ForgeMindLogo /></div>
+        <div style={{ width: 88, height: 88, margin: '0 auto 6px' }}><ForgeMindLogo /></div>
         <h1 style={{ textAlign: 'center', margin: '0 0 4px', fontSize: 24, fontWeight: 800, letterSpacing: '-.02em' }}>
-          {setup ? 'Welcome to Open Forge' : 'Sign in to Open Forge'}
+          {setup ? 'Welcome to Open Forge AI' : 'Sign in to Open Forge AI'}
         </h1>
         <p className="sec" style={{ textAlign: 'center', margin: '0 0 20px', lineHeight: 1.5 }}>
           {setup ? 'Create the first account. It becomes the admin of this install — there is no default password.' : 'Your self-hosted assistant for tasks, calendar, mail and chats.'}
@@ -48,6 +49,13 @@ export default function AuthPage({ mode, onDone, offline, demo }) {
         <button className="btn primary" style={{ width: '100%', padding: 12 }} disabled={busy}>
           {busy && <Loader2 size={16} className="spin" />}{setup ? 'Create admin account' : 'Sign in'}
         </button>
+        {links && (
+          <div className="row" style={{ justifyContent: 'center', gap: 14, marginTop: 16, fontSize: 12.5 }}>
+            <span className="muted">by Forgemind AI</span>
+            <a href={links.website} target="_blank" rel="noreferrer" className="row" style={{ gap: 4 }}><Globe size={13} />forgemind.in</a>
+            <a href={links.instagram} target="_blank" rel="noreferrer" className="row" style={{ gap: 4 }}><Instagram size={13} />@forgemind_ai</a>
+          </div>
+        )}
       </form>
     </div>
   );

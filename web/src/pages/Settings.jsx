@@ -138,7 +138,7 @@ function WhatsAppSection({ v, setView }) {
   const [st, run, Msg] = useSave(setView);
   return (
     <>
-      <p className="lead">The <strong>WhatsApp Cloud API</strong> (Meta). Incoming messages reach Open Forge through a webhook; you reply from the Chats card. A free-text reply is only allowed within 24 hours of the person's last message — that's Meta's rule.</p>
+      <p className="lead">The <strong>WhatsApp Cloud API</strong> (Meta). Incoming messages reach Open Forge AI through a webhook; you reply from the Chats card. A free-text reply is only allowed within 24 hours of the person's last message — that's Meta's rule.</p>
       <ol className="steps-list">
         <li>At <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer">developers.facebook.com</a> create a Business app and add the <strong>WhatsApp</strong> product.</li>
         <li>From WhatsApp → API Setup copy the <strong>Phone number ID</strong>. For a token that doesn't expire, create a <strong>System User</strong> token in Business Settings with <code>whatsapp_business_messaging</code>.</li>
@@ -177,7 +177,7 @@ function TelegramSection({ v, setView }) {
   const [st, run, Msg] = useSave(setView);
   return (
     <>
-      <p className="lead">A <strong>Telegram bot</strong> as a chat channel. Open Forge registers its webhook for you — messages to the bot appear on the Chats card and you reply from there.</p>
+      <p className="lead">A <strong>Telegram bot</strong> as a chat channel. Open Forge AI registers its webhook for you — messages to the bot appear on the Chats card and you reply from there.</p>
       <ol className="steps-list">
         <li>In Telegram, message <a href="https://t.me/BotFather" target="_blank" rel="noreferrer">@BotFather</a> → <code>/newbot</code> and copy the token.</li>
         <li>Paste it here and press Save. To read group messages, also turn off privacy mode with <code>/setprivacy</code>.</li>
@@ -245,7 +245,18 @@ export default function SettingsPage({ user, section, onUserChange }) {
   const [view, setView] = useState(null);
   const [err, setErr] = useState('');
   useEffect(() => { api.get('/settings').then(setView).catch(e => setErr(e.message)); }, []);
-  useEffect(() => { document.getElementById(`s-${section}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [section, view]);
+  // Switching sections swaps the card in place; keep the page at the top so nothing jumps.
+  useEffect(() => { window.scrollTo({ top: 0 }); }, [section]);
+  const active = SECTIONS.find(s => s.id === section) || SECTIONS[0];
+  const connected = (id) => {
+    if (!view) return false;
+    if (id === 'model') return view.model.apiKey.set;
+    if (id === 'voice') return view.voice.apiKey.set;
+    if (id === 'google') return view.google.connected;
+    if (id === 'whatsapp') return view.whatsapp.accessToken.set;
+    if (id === 'telegram') return view.telegram.status === 'connected';
+    return false;
+  };
   const badge = (id) => {
     if (!view) return null;
     if (id === 'model') return <Status ok={view.model.apiKey.set} warn={view.model.status === 'error'}>{view.model.apiKey.set ? `${view.model.provider} · ${view.model.model}` : 'Not set'}</Status>;
@@ -257,22 +268,26 @@ export default function SettingsPage({ user, section, onUserChange }) {
   };
   return (
     <div className="settings">
-      <nav className="snav" aria-label="Settings sections">
-        {SECTIONS.map(s => <a key={s.id} href={`#/settings/${s.id}`} className={section === s.id ? 'on' : ''}><s.icon size={16} />{s.label}</a>)}
+      <nav className="card snav" aria-label="Settings sections">
+        {SECTIONS.map(s => (
+          <a key={s.id} href={`#/settings/${s.id}`} className={active.id === s.id ? 'on' : ''} data-testid={`snav-${s.id}`}>
+            <s.icon size={16} />{s.label}{s.id !== 'account' && <span className={`dot ${connected(s.id) ? 'ok' : ''}`} />}
+          </a>
+        ))}
       </nav>
       <div>
         {err && <div className="banner err">{err}</div>}
-        {!view ? <div className="empty"><Loader2 className="spin" /></div> : SECTIONS.map(s => (
-          <section key={s.id} id={`s-${s.id}`} className="card ssec" data-testid={`settings-${s.id}`}>
-            <h2><s.icon size={19} />{s.label}<span style={{ marginLeft: 'auto' }}>{badge(s.id)}</span></h2>
-            {s.id === 'model' && <ModelSection v={view.model} setView={setView} />}
-            {s.id === 'voice' && <VoiceSection v={view.voice} setView={setView} />}
-            {s.id === 'google' && <GoogleSection v={view.google} setView={setView} />}
-            {s.id === 'whatsapp' && <WhatsAppSection v={view.whatsapp} setView={setView} />}
-            {s.id === 'telegram' && <TelegramSection v={view.telegram} setView={setView} />}
-            {s.id === 'account' && <AccountSection user={user} onUserChange={onUserChange} />}
+        {!view ? <div className="card ssec"><div className="empty"><Loader2 className="spin" /></div></div> : (
+          <section key={active.id} className="card ssec" data-testid={`settings-${active.id}`}>
+            <h2><active.icon size={19} />{active.label}<span style={{ marginLeft: 'auto' }}>{badge(active.id)}</span></h2>
+            {active.id === 'model' && <ModelSection v={view.model} setView={setView} />}
+            {active.id === 'voice' && <VoiceSection v={view.voice} setView={setView} />}
+            {active.id === 'google' && <GoogleSection v={view.google} setView={setView} />}
+            {active.id === 'whatsapp' && <WhatsAppSection v={view.whatsapp} setView={setView} />}
+            {active.id === 'telegram' && <TelegramSection v={view.telegram} setView={setView} />}
+            {active.id === 'account' && <AccountSection user={user} onUserChange={onUserChange} />}
           </section>
-        ))}
+        )}
       </div>
     </div>
   );

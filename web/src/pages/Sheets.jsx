@@ -1,7 +1,7 @@
 // The office cards opened full size.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, Check, X, ChevronLeft, ChevronRight, Send, MessageSquare, Mail, CalendarPlus, ListPlus, ListChecks, Search, Trash2, ExternalLink, Reply } from 'lucide-react';
-import { api } from '../api';
+import { useApi } from '../lib/apiContext';
 import { Modal, Avatar } from '../components/ui.jsx';
 import { ago, timeOf, todayYmd, ymd, addDays, dayLabel, senderName } from '../lib/util';
 
@@ -16,7 +16,7 @@ export function Sheet({ sheet, setSheet, data, errs, status, reload, decide }) {
   });
   const notGoogle = ['tasks', 'calendar', 'mail'].includes(view) && errs[view] === 'google';
   return (
-    <Modal title={TITLES[view] || 'Open Forge'} onClose={close} wide>
+    <Modal title={TITLES[view] || 'Open Forge AI'} onClose={close} wide>
       <div className="sheet-body" data-testid={`sheet-${view}`}>
         {notGoogle ? <div className="empty">Google isn't connected. <a href="#/settings/google" onClick={close}>Connect it in Settings</a>.</div>
           : view === 'tasks' ? <TasksSheet tasks={data.tasks || []} reload={() => reload(['tasks'])} />
@@ -41,6 +41,7 @@ export function draftIcon(kind) {
 
 // ── Tasks: kanban by due date. Drag a card to re-date it, or onto Done. ──
 function TasksSheet({ tasks, reload }) {
+  const { api, demo } = useApi();
   const today = todayYmd();
   const [drag, setDrag] = useState(null);
   const [over, setOver] = useState(null);
@@ -105,6 +106,7 @@ function TasksSheet({ tasks, reload }) {
 
 // ── Calendar: a week at a time, plus "add event". ──
 function CalendarSheet({ reload }) {
+  const { api, demo } = useApi();
   const [start, setStart] = useState(() => { const s = new Date(); s.setHours(0, 0, 0, 0); s.setDate(s.getDate() - ((s.getDay() + 6) % 7)); return s; });
   const [events, setEvents] = useState(null);
   const [err, setErr] = useState('');
@@ -166,6 +168,7 @@ function CalendarSheet({ reload }) {
 
 // ── Mail: inbox list + reader + reply. ──
 function MailSheet({ initialId }) {
+  const { api, demo } = useApi();
   const [q, setQ] = useState('in:inbox');
   const [list, setList] = useState(null);
   const [sel, setSel] = useState(initialId || null);
@@ -225,6 +228,7 @@ function MailSheet({ initialId }) {
 
 // ── Chats: WhatsApp + Telegram inbox. ──
 function ChatsSheet({ chats, initialId, status, reload }) {
+  const { api, demo } = useApi();
   const [sel, setSel] = useState(initialId ? Number(initialId) : (chats[0]?.chatId || null));
   const [thread, setThread] = useState(null);
   const [text, setText] = useState('');
@@ -233,7 +237,7 @@ function ChatsSheet({ chats, initialId, status, reload }) {
   const endRef = useRef(null);
   const load = () => { if (sel) api.get(`/chats/${sel}/messages`).then(setThread).catch(e => setState({ busy: false, err: e.message })); };
   useEffect(() => { setThread(null); setState({ busy: false, err: '' }); load(); }, [sel]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { const es = new EventSource('/api/events'); es.addEventListener('chats', load); return () => es.close(); }, [sel]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (demo) return undefined; const es = new EventSource('/api/events'); es.addEventListener('chats', load); return () => es.close(); }, [sel, demo]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [thread]);
   async function send(e) {
     e.preventDefault(); if (!text.trim()) return;
@@ -293,6 +297,7 @@ function ChatsSheet({ chats, initialId, status, reload }) {
 
 // ── Drafts: what Forge prepared, waiting for the user. ──
 export function DraftCard({ a, onDone, focus }) {
+  const { api, demo } = useApi();
   const editable = { chat_message: ['text'], email: ['to', 'subject', 'body'], email_reply: ['body'], calendar_event: ['title', 'start', 'end'], task: ['title', 'due', 'notes'], task_done: [] }[a.kind] || [];
   const [edits, setEdits] = useState({});
   const [state, setState] = useState({ busy: false, err: '' });

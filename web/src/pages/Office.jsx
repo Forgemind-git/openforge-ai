@@ -3,7 +3,9 @@ import {
   CalendarDays, Mail, ListTodo, MessagesSquare, FileCheck2, History, Send, Mic, MicOff, Loader2, Maximize2,
   Check, X, Plus, Settings as Cog, Trash2, Square, Clock,
 } from 'lucide-react';
-import { api, streamChat } from '../api';
+import { streamChat } from '../api';
+import { useApi } from '../lib/apiContext';
+import { demoChat } from '../lib/demo';
 import ForgeMindLogo from '../components/ForgeMindLogo.jsx';
 import { Avatar, Answer } from '../components/ui.jsx';
 import { createGeminiLive, isGeminiLiveSupported } from '../lib/geminiLive';
@@ -13,7 +15,7 @@ import { Sheet, DraftCard, draftIcon } from './Sheets.jsx';
 const PANELS = ['tasks', 'calendar', 'mail', 'chats', 'drafts'];
 const SUGGESTIONS = ['What is on my plate today?', 'Which chats are waiting for a reply?', 'Summarise my unread mail', 'Plan my week'];
 
-function useOfficeData() {
+function useOfficeData(api) {
   const [status, setStatus] = useState(null);
   const [d, setD] = useState({ tasks: null, calendar: null, mail: null, chats: null, drafts: null });
   const [errs, setErrs] = useState({});
@@ -33,8 +35,8 @@ function useOfficeData() {
       try { const v = await job[p](); setD(x => ({ ...x, [p]: v })); setErrs(e => ({ ...e, [p]: null })); }
       catch (e) { setD(x => ({ ...x, [p]: x[p] || [] })); setErrs(er => ({ ...er, [p]: e.notConnected ? 'google' : e.message })); }
     }));
-  }, []);
-  useEffect(() => { load(); }, [load]);
+  }, [api]);
+  useEffect(() => { setD({ tasks: null, calendar: null, mail: null, chats: null, drafts: null }); load(); }, [load]);
   return { status, d, errs, load };
 }
 
@@ -59,7 +61,8 @@ function NeedsSetup({ what, section }) {
 }
 
 export default function Office({ user }) {
-  const { status, d, errs, load } = useOfficeData();
+  const { api, demo } = useApi();
+  const { status, d, errs, load } = useOfficeData(api);
   const [sheet, setSheet] = useState(null);          // { view, id }
   const [lit, setLit] = useState({});
   const [mobileTab, setMobileTab] = useState('assistant');
@@ -79,15 +82,18 @@ export default function Office({ user }) {
   const [speaking, setSpeaking] = useState(false);
   const liveRef = useRef(null);
 
-  const loadHistory = useCallback(() => api.get('/assistant/conversations').then(r => setHistory(r.conversations)).catch(() => {}), []);
+  const loadHistory = useCallback(() => api.get('/assistant/conversations').then(r => setHistory(r.conversations)).catch(() => {}), [api]);
+  // Switching demo on/off starts a fresh conversation.
+  useEffect(() => { setMsgs([]); setConvId(null); setSheet(null); }, [demo]);
   useEffect(() => { loadHistory(); }, [loadHistory]);
 
   // New chat messages arrive over the event stream.
   useEffect(() => {
+    if (demo) return undefined;
     const es = new EventSource('/api/events');
     es.addEventListener('chats', () => load(['chats']));
     return () => es.close();
-  }, [load]);
+  }, [load, demo]);
 
   useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }); }, [msgs, running]);
 
@@ -111,7 +117,7 @@ export default function Office({ user }) {
     setMsgs(m => [...m, { role: 'user', content: q }]);
     const ctrl = new AbortController(); abortRef.current = ctrl;
     try {
-      await streamChat({
+      await (demo ? demoChat : streamChat)({
         message: q, conversationId: convId, signal: ctrl.signal,
         onEvent: (ev, data) => {
           if (ev === 'conversation') setConvId(data.id);
@@ -141,6 +147,7 @@ export default function Office({ user }) {
   });
   async function toggleTalk() {
     if (live) { liveRef.current?.stop(); liveRef.current = null; setLive(null); setSpeaking(false); loadHistory(); return; }
+    if (demo) { setMsgs(m => [...m, { role: 'error', content: 'Talk is live voice with your own Gemini key. Turn Demo off and add the key in Settings → Voice to try it.' }]); return; }
     if (!status?.voice) { setMsgs(m => [...m, { role: 'error', content: 'Talk needs your Gemini API key — add it in Settings → Voice.' }]); return; }
     if (!isGeminiLiveSupported()) { setMsgs(m => [...m, { role: 'error', content: 'This browser cannot open the microphone here (it needs HTTPS and a modern browser).' }]); return; }
     setLive('connecting');
@@ -211,7 +218,7 @@ export default function Office({ user }) {
             {upcoming.length > 0 && <div className="eyebrow" style={{ marginTop: 4 }}>Coming up</div>}
             {upcoming.map(e => (
               <button key={e.id} className="mini-row" onClick={() => setSheet({ view: 'calendar' })}>
-                <span className="t grow clip">{e.title}</span><span className="s">{new Date(e.start).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' })}</span>
+                <span className="t grow clip">{e.title}</span><span className="s">{new Date(e.start).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
               </button>
             ))}
           </>
@@ -303,7 +310,12 @@ export default function Office({ user }) {
             )}
             {live && <div className="pill red" style={{ marginTop: 6 }} data-testid="live-pill"><span className="fa-live-dot" style={{ width: 7, height: 7, borderRadius: 4, background: 'currentColor' }} />{live === 'connecting' ? 'Connecting voice…' : speaking ? 'Speaking' : 'Listening'}</div>}
           </div>
-          {setupMissing && (
+          {demo && (
+            <div className="banner info demo-banner" data-testid="demo-banner">
+              <strong>Demo mode</strong> — sample tasks, calendar, mail and chats so you can see how Open Forge AI works. Try a suggestion below. Turn <strong>Demo</strong> off in the top bar to use your own accounts.
+            </div>
+          )}
+          {!demo && setupMissing && (
             <div className="banner info" style={{ margin: '10px 4px 0' }} data-testid="setup-banner">
               Start by adding your model key: <a href="#/settings/model">Settings → Model</a> (OpenAI or Anthropic). Then connect Google, WhatsApp or Telegram for the cards.
             </div>
@@ -332,12 +344,12 @@ export default function Office({ user }) {
             )}
           </form>
           <div className="muted" style={{ fontSize: 11.5, textAlign: 'center', marginTop: 6 }}>
-            {status?.model ? <>Model: <span className="mono">{status.modelName}</span> · </> : null}<a href="#/settings" style={{ color: 'inherit' }}><Cog size={11} style={{ verticalAlign: -1 }} /> Settings</a>
+            {demo ? <>Sample data · </> : status?.model ? <>Model: <span className="mono">{status.modelName}</span> · </> : null}<a href="#/settings" style={{ color: 'inherit' }}><Cog size={11} style={{ verticalAlign: -1 }} /> Settings</a>
           </div>
         </div>
         {rightCol}
       </main>
-      {sheet && <Sheet sheet={sheet} setSheet={setSheet} data={d} errs={errs} status={status} reload={load} decide={decide} DraftCard={DraftCard} />}
+      {sheet && <Sheet key={String(demo)} sheet={sheet} setSheet={setSheet} data={d} errs={errs} status={status} reload={load} decide={decide} DraftCard={DraftCard} />}
     </>
   );
 }

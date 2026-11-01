@@ -188,7 +188,7 @@ function systemPrompt(user, { tz, now = new Date() } = {}) {
   try { local = now.toLocaleString('en-GB', { timeZone: tz || 'UTC', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }); }
   catch { local = now.toISOString(); }
   return [
-    `You are Forge, the personal assistant inside Open Forge for ${user.name}.`,
+    `You are Forge, the personal assistant inside Open Forge AI for ${user.name}.`,
     `Right now it is ${local} (${tz || 'UTC'}). Use this time zone for every date and time you mention or prepare.`,
     'You can see their Google Tasks, Google Calendar, Gmail inbox and a unified WhatsApp + Telegram chat inbox through your tools.',
     '',

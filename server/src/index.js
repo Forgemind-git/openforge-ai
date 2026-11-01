@@ -1,4 +1,4 @@
-// Open Forge — API server + the built web app, one process.
+// Open Forge AI — API server + the built web app, one process.
 const path = require('path');
 const fs = require('fs');
 const http = require('http');

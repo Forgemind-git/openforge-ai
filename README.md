@@ -1,8 +1,12 @@
-# Open Forge
+# Open Forge AI
 
-A self-hosted, open-source AI assistant for your **tasks, calendar, mail and chats** — in one office-style screen.
+<p align="center"><img src="web/public/forgemind-logo.svg" width="72" alt="Forgemind AI logo"></p>
 
-Open Forge puts your Google Tasks, Google Calendar, Gmail and a unified WhatsApp + Telegram inbox around an assistant called **Forge**. Ask it anything ("what's on my plate today?", "which chats are waiting on me?", "draft a reply to Priya's email") by typing, or press **Talk** and speak to it in real time.
+A self-hosted, open-source AI assistant for your **tasks, calendar, mail and chats** — in one office-style screen. Built by [Forgemind AI](https://forgemind.in/) · [@forgemind_ai](https://www.instagram.com/forgemind_ai/) on Instagram.
+
+![Open Forge AI — the office (light)](docs/screenshots/office-light.png)
+
+Open Forge AI puts your Google Tasks, Google Calendar, Gmail and a unified WhatsApp + Telegram inbox around an assistant called **Forge**. Ask it anything ("what's on my plate today?", "which chats are waiting on me?", "draft a reply to Arjun") by typing, or press **Talk** and speak to it in real time.
 
 **Forge never sends anything on its own.** When it wants to send a message, an email, add an event or create a task, it prepares a **draft** on the *Drafts to approve* card. Nothing leaves until you press **Send / Confirm** (you can edit the draft first).
 
@@ -18,11 +22,38 @@ It ships with **zero credentials**. Every person on an install brings their own 
 
 Keys are entered on the **Settings** page and stored **encrypted** (AES-256-GCM) in the server's database. They are never sent back to the browser.
 
+## Demo mode
+
+Switch **Demo** on in the top bar to see every card filled with sample tasks, events, emails and chats, and to try the assistant with scripted answers — before you connect anything. A new user starts in demo mode until they connect something; the switch is remembered per browser. Demo data lives only in the browser tab and never touches your accounts.
+
+## Screenshots
+
+| | |
+|---|---|
+| ![Dark theme](docs/screenshots/office-dark.png) | ![Forge drafts a reply](docs/screenshots/assistant-draft.png) |
+| **Dark theme** | **Forge prepares a draft — you press Send** |
+| ![Tasks](docs/screenshots/tasks.png) | ![Calendar](docs/screenshots/calendar.png) |
+| **Tasks** — kanban over Google Tasks | **Calendar** — week view |
+| ![Mail](docs/screenshots/mail.png) | ![Chats](docs/screenshots/chats.png) |
+| **Mail** — Gmail inbox, reader and reply | **Chats** — WhatsApp + Telegram in one inbox |
+| ![Drafts](docs/screenshots/drafts.png) | ![Settings](docs/screenshots/settings-google.png) |
+| **Drafts to approve** | **Settings** — your own keys, step by step |
+
+---|---|---|
+| OpenAI **or** Anthropic API key | the chat model + tool calling | platform.openai.com · console.anthropic.com |
+| Gemini API key | **Talk** — real-time voice (Gemini Live) | aistudio.google.com/apikey |
+| Google OAuth Client ID + Secret | Gmail, Google Calendar, Google Tasks | Google Cloud Console |
+| WhatsApp Cloud API phone number ID + token | WhatsApp chats | developers.facebook.com |
+| Telegram bot token | Telegram chats | @BotFather |
+
+Keys are entered on the **Settings** page and stored **encrypted** (AES-256-GCM) in the server's database. They are never sent back to the browser.
+
 ---
 
 ## Features
 
 - **Office view** — Calendar, Mail and Conversations on the left; the animated Forge assistant and chat in the middle; Tasks, Chats and Drafts on the right. Light and dark themes.
+- **Demo mode** — sample data in every card so you can see it working before connecting anything.
 - **Chat with tools** — Forge reads your real data through tools (overview of the day, tasks, events, mail search/read, chats) and opens the relevant card on screen.
 - **Talk** — live, interruptible voice with Gemini Live, using the same tools. Transcripts are saved to your conversation history.
 - **Tasks** — a kanban (Overdue / Today / Upcoming / Done) over all your Google Tasks lists. Drag to re-date, tick to complete, add new.
@@ -44,7 +75,7 @@ docker compose up -d --build
 
 Open `http://localhost:3000` (or your `PUBLIC_URL`) and **create the admin account**. Then go to **Settings** and add your keys.
 
-> WhatsApp and Telegram webhooks, and Google sign-in on anything but localhost, need a **public HTTPS** address. Put Open Forge behind a reverse proxy with TLS (see below) and set `PUBLIC_URL` to that address.
+> WhatsApp and Telegram webhooks, and Google sign-in on anything but localhost, need a **public HTTPS** address. Put Open Forge AI behind a reverse proxy with TLS (see below) and set `PUBLIC_URL` to that address.
 
 ### Behind Traefik
 
@@ -98,11 +129,11 @@ Each user uses **their own** Google Cloud OAuth client:
 3. Settings → **WhatsApp**: paste the phone number ID and token; optionally a verify token of your choice and the app secret (App settings → Basic) so every webhook's signature is checked. Press **Save & test**.
 4. Copy the **Callback URL** and **Verify token** shown, paste them into WhatsApp → **Configuration → Webhook**, press *Verify and save*, then **subscribe to `messages`**.
 
-Messages people send to your number now appear in **Chats**. WhatsApp only allows a free-text reply within **24 hours** of the person's last message; outside that window Meta requires an approved template (not covered by Open Forge).
+Messages people send to your number now appear in **Chats**. WhatsApp only allows a free-text reply within **24 hours** of the person's last message; outside that window Meta requires an approved template (not covered by Open Forge AI).
 
 ### 5. Telegram — bot
 1. Message [@BotFather](https://t.me/BotFather), send `/newbot`, copy the token.
-2. Settings → **Telegram**: paste it and press **Save & register webhook**. Open Forge calls `setWebhook` for you (with a secret token so only Telegram can post to it).
+2. Settings → **Telegram**: paste it and press **Save & register webhook**. Open Forge AI calls `setWebhook` for you (with a secret token so only Telegram can post to it).
 3. For group chats, disable privacy mode with `/setprivacy` in BotFather.
 
 ## How the "never sends on its own" rule is enforced
@@ -125,4 +156,4 @@ Stack: Node 20 + Express + better-sqlite3 + ws · React 18 + Vite · lucide icon
 - Gmail access uses `gmail.readonly` + `gmail.send` only (no delete/modify).
 
 ## License
-[MIT](LICENSE)
+Code: [MIT](LICENSE). The Forgemind AI name and logo are trademarks of Forgemind AI — keep them or replace them with your own branding when you redistribute.
