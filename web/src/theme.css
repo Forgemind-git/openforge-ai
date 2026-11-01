@@ -106,7 +106,9 @@ html { scrollbar-gutter: stable; }   /* the page never shifts when a scrollbar a
 .brand-link { color: #fff; text-decoration: none; justify-self: start; }
 .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 800; font-size: 16.5px; letter-spacing: -.01em; line-height: 1; white-space: nowrap; }
 .brand img { display: block; flex-shrink: 0; }
-.brand .tag { background: #dc2626; color: #fff; border-radius: 6px; padding: 3px 7px; font-size: 12px; letter-spacing: .02em; }
+/* Same rule as Forge Growth's FORGE [GROWTH] mark: the pill inherits the word's size and weight and sits on its line. */
+.brand .brand-name, .brand .tag { font-size: 16px; font-weight: 800; letter-spacing: -.01em; line-height: 1.25; }
+.brand .tag { background: #dc2626; color: #fff; border-radius: 8px; padding: 2px 8px; display: inline-block; margin-left: -2px; }
 .topbar .navpills { display: flex; gap: 4px; background: rgba(255,255,255,.08); border-radius: 999px; padding: 4px; }
 .topbar .navpills a { color: rgba(255,255,255,.75); text-decoration: none; font-weight: 700; font-size: 13.5px; padding: 7px 18px; border-radius: 999px; transition: background .15s; }
 .topbar .navpills a.on { background: #dc2626; color: #fff; }
