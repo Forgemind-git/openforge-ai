@@ -1,19 +1,32 @@
+// The office — modelled on Forge Growth's Forge AI tab: a floor with two slim
+// rails of cards (natural height, vertically centred, click to open), Forge in
+// the middle with the latest answer under it, a round-button toolbar on top and
+// a floating composer at the bottom.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CalendarDays, Mail, ListTodo, MessagesSquare, FileCheck2, History, Send, Mic, MicOff, Loader2, Maximize2,
-  Check, X, Plus, Settings as Cog, Trash2, Square, Clock,
+  CalendarDays, Mail, ListTodo, MessagesSquare, FileCheck2, History, Send, Mic, PhoneOff, Loader2, ArrowUpRight,
+  Check, X, Plus, Settings2, Trash2, Clock, ShieldCheck, AlertTriangle, CheckCircle2, Sparkles, FlaskConical,
 } from 'lucide-react';
 import { streamChat } from '../api';
 import { useApi } from '../lib/apiContext';
 import { demoChat } from '../lib/demo';
 import ForgeMindLogo from '../components/ForgeMindLogo.jsx';
-import { Avatar, Answer } from '../components/ui.jsx';
+import { Avatar, Answer, Modal } from '../components/ui.jsx';
 import { createGeminiLive, isGeminiLiveSupported } from '../lib/geminiLive';
 import { ago, timeOf, todayYmd, ymd, addDays, senderName } from '../lib/util';
-import { Sheet, DraftCard, draftIcon } from './Sheets.jsx';
+import { Sheet, draftIcon } from './Sheets.jsx';
 
 const PANELS = ['tasks', 'calendar', 'mail', 'chats', 'drafts'];
 const SUGGESTIONS = ['What is on my plate today?', 'Which chats are waiting for a reply?', 'Summarise my unread mail', 'Plan my week'];
+const STATION = {
+  calendar: { title: 'Calendar', Icon: CalendarDays },
+  chats: { title: 'Chats', Icon: MessagesSquare },
+  tasks: { title: 'Tasks', Icon: ListTodo },
+  mail: { title: 'Mail', Icon: Mail },
+  drafts: { title: 'Drafts to approve', Icon: FileCheck2 },
+};
+const LEFT = ['calendar', 'chats', 'tasks'];
+const RIGHT = ['mail', 'drafts'];
 
 function useOfficeData(api) {
   const [status, setStatus] = useState(null);
@@ -29,9 +42,8 @@ function useOfficeData(api) {
       chats: () => api.get('/chats').then(r => r.chats),
       drafts: () => api.get('/actions').then(r => r.actions),
     };
-    const googleOn = st?.google;
     await Promise.all(panels.map(async (p) => {
-      if (['tasks', 'calendar', 'mail'].includes(p) && !googleOn) { setD(x => ({ ...x, [p]: [] })); setErrs(e => ({ ...e, [p]: 'google' })); return; }
+      if (['tasks', 'calendar', 'mail'].includes(p) && !st?.google) { setD(x => ({ ...x, [p]: [] })); setErrs(e => ({ ...e, [p]: 'google' })); return; }
       try { const v = await job[p](); setD(x => ({ ...x, [p]: v })); setErrs(e => ({ ...e, [p]: null })); }
       catch (e) { setD(x => ({ ...x, [p]: x[p] || [] })); setErrs(er => ({ ...er, [p]: e.notConnected ? 'google' : e.message })); }
     }));
@@ -40,54 +52,61 @@ function useOfficeData(api) {
   return { status, d, errs, load };
 }
 
-function Station({ id, icon: Icon, color, title, count, lit, onOpen, children, flex = true, action }) {
+function RoundBtn({ title, onClick, children, testid }) {
+  return <button type="button" className="roundbtn" title={title} aria-label={title} onClick={onClick} data-testid={testid}>{children}</button>;
+}
+
+// One card on a rail. The whole card opens its sheet; rows inside can act on their own.
+function Station({ id, count, used, scanning, onOpen, children }) {
+  const { title, Icon } = STATION[id];
   return (
-    <section className={`card station ${flex ? 'flex1' : ''} ${lit ? 'lit' : ''}`} data-station={id} aria-label={title}>
+    <div role="button" tabIndex={0} className={`fa-station station ${scanning ? 'scanning' : ''}`} data-station={id} aria-label={`Open ${title}`}
+      onClick={onOpen} onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onOpen(); }}>
       <div className="station-head">
-        <span className="ico" style={{ background: `${color}1f`, color }}><Icon size={16} /></span>
-        <h3>{title}</h3>
-        {count != null && count > 0 && <span className="pill red" data-testid={`count-${id}`}>{count}</span>}
-        {action}
-        {onOpen && <button className="btn ghost icon" onClick={onOpen} title={`Open ${title}`} aria-label={`Open ${title}`}><Maximize2 size={15} /></button>}
+        <Icon size={15} className={scanning ? 'acc' : 'muted'} />
+        <span className="st-title">{title}</span>
+        {count > 0 && <span className="pill red" data-testid={`count-${id}`}>{count}</span>}
+        {scanning && <span className="fa-scan-pill">Reading</span>}
+        {!scanning && used && <span className="fa-used-dot" title="Forge looked here in this answer" />}
+        {!scanning && <span className="fa-open-chip" aria-hidden><ArrowUpRight size={13} />Open</span>}
       </div>
-      <div className="station-body scroll">{children}</div>
-      {lit && <><div className="fa-scan-tint" /><div className="fa-scan-sweep" /></>}
-    </section>
+      <div className="station-body">{children}</div>
+      {scanning && <><div className="fa-scan-tint" /><div className="fa-scan-sweep" />{['tl', 'tr', 'bl', 'br'].map(c => <span key={c} className={`fa-bracket fa-bracket-${c}`} />)}</>}
+    </div>
   );
 }
 
+const stop = (fn) => (e) => { e.stopPropagation(); fn(e); };
+
 function NeedsSetup({ what, section }) {
-  return <div className="empty">{what} isn't connected yet.<br /><a href={`#/settings/${section}`}>Connect it in Settings</a></div>;
+  return <div className="st-muted">{what} isn't connected. <a href={`#/settings/${section}`} onClick={(e) => e.stopPropagation()}>Connect</a></div>;
 }
 
 export default function Office({ user }) {
   const { api, demo } = useApi();
   const { status, d, errs, load } = useOfficeData(api);
-  const [sheet, setSheet] = useState(null);          // { view, id }
-  const [lit, setLit] = useState({});
-  const [mobileTab, setMobileTab] = useState('assistant');
-  const [history, setHistory] = useState([]);
+  const [sheet, setSheet] = useState(null);           // { view, id }
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [scan, setScan] = useState([]);               // stations being read right now
+  const [used, setUsed] = useState([]);               // stations the last answer used
 
-  // chat
   const [convId, setConvId] = useState(null);
-  const [msgs, setMsgs] = useState([]);              // {role, content, steps, live}
+  const [lastQ, setLastQ] = useState('');
+  const [answer, setAnswer] = useState(null);         // { text, error }
+  const [proc, setProc] = useState([]);               // [{ id, label, status }]
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [running, setRunning] = useState([]);        // labels of tools in flight
-  const logRef = useRef(null);
+  const [typing, setTyping] = useState(false);
   const abortRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // voice
-  const [live, setLive] = useState(null);            // null | 'connecting' | 'on'
+  const [live, setLive] = useState(null);             // null | 'connecting' | 'live'
   const [speaking, setSpeaking] = useState(false);
   const liveRef = useRef(null);
+  const turnRef = useRef({ user: '', bot: '' });
 
-  const loadHistory = useCallback(() => api.get('/assistant/conversations').then(r => setHistory(r.conversations)).catch(() => {}), [api]);
-  // Switching demo on/off starts a fresh conversation.
-  useEffect(() => { setMsgs([]); setConvId(null); setSheet(null); }, [demo]);
-  useEffect(() => { loadHistory(); }, [loadHistory]);
-
-  // New chat messages arrive over the event stream.
+  // Switching demo on/off starts clean.
+  useEffect(() => { setAnswer(null); setLastQ(''); setConvId(null); setSheet(null); setUsed([]); setProc([]); }, [demo]);
   useEffect(() => {
     if (demo) return undefined;
     const es = new EventSource('/api/events');
@@ -95,26 +114,26 @@ export default function Office({ user }) {
     return () => es.close();
   }, [load, demo]);
 
-  useEffect(() => { logRef.current?.scrollTo({ top: logRef.current.scrollHeight, behavior: 'smooth' }); }, [msgs, running]);
-
-  const light = (panels = []) => {
-    if (!panels.length) return;
-    setLit(l => ({ ...l, ...Object.fromEntries(panels.map(p => [p, true])) }));
-    setTimeout(() => setLit(l => ({ ...l, ...Object.fromEntries(panels.map(p => [p, false])) })), 1600);
-  };
   const onStep = (s) => {
-    if (s.phase === 'start') { setRunning(r => [...r, s.label]); light(s.panels); }
-    else setRunning(r => { const i = r.indexOf(s.label); return i < 0 ? r : [...r.slice(0, i), ...r.slice(i + 1)]; });
-    if (s.phase === 'done' && s.tool === 'open_view' && s.focus) { setSheet(s.focus); setMobileTab('assistant'); }
+    const views = (s.panels || []).filter(p => STATION[p]);
+    if (s.phase === 'start') {
+      setProc(p => [...p.slice(-3), { id: `${s.tool}-${Date.now()}`, label: s.label, status: 'running' }]);
+      setScan(views);
+    } else {
+      setProc(p => { const i = [...p].reverse().findIndex(x => x.label === s.label && x.status === 'running'); if (i < 0) return p; const k = p.length - 1 - i; return p.map((x, j) => (j === k ? { ...x, status: s.phase === 'error' ? 'error' : 'done' } : x)); });
+      setScan([]);
+      if (views.length) setUsed(u => [...new Set([...u, ...views])]);
+    }
+    if (s.phase === 'done' && s.tool === 'open_view' && s.focus) setSheet(s.focus);
     if (s.phase === 'done' && s.drafts) load(['drafts']);
   };
 
   async function ask(text) {
     const q = String(text ?? input).trim();
-    if (!q || busy) return;
-    if (live && liveRef.current) { liveRef.current.sendText(q); setInput(''); setMsgs(m => [...m, { role: 'user', content: q }]); return; }
-    setInput(''); setBusy(true);
-    setMsgs(m => [...m, { role: 'user', content: q }]);
+    if (!q) return;
+    if (live === 'live' && liveRef.current) { liveRef.current.sendText(q); setInput(''); setLastQ(q); return; }
+    if (busy) return;
+    setInput(''); setTyping(false); setBusy(true); setLastQ(q); setAnswer(null); setUsed([]); setProc([]);
     const ctrl = new AbortController(); abortRef.current = ctrl;
     try {
       await (demo ? demoChat : streamChat)({
@@ -122,234 +141,262 @@ export default function Office({ user }) {
         onEvent: (ev, data) => {
           if (ev === 'conversation') setConvId(data.id);
           else if (ev === 'step') onStep(data);
-          else if (ev === 'message') setMsgs(m => [...m, { role: 'assistant', content: data.content, steps: data.steps }]);
-          else if (ev === 'error') setMsgs(m => [...m, { role: 'error', content: data.error }]);
+          else if (ev === 'message') setAnswer({ text: data.content });
+          else if (ev === 'error') setAnswer({ text: data.error, error: true });
         },
       });
     } catch (e) {
-      if (e.name !== 'AbortError') setMsgs(m => [...m, { role: 'error', content: e.message }]);
-    } finally { setBusy(false); setRunning([]); abortRef.current = null; loadHistory(); }
+      if (e.name !== 'AbortError') setAnswer({ text: e.message, error: true });
+    } finally {
+      setBusy(false); setScan([]); abortRef.current = null;
+      setTimeout(() => setProc([]), 1800);
+    }
   }
 
+  function newChat() { setConvId(null); setAnswer(null); setLastQ(''); setUsed([]); setProc([]); }
   async function openConversation(id) {
     const r = await api.get(`/assistant/conversations/${id}`);
-    setConvId(id);
-    setMsgs(r.messages.map(m => ({ role: m.role, content: m.content, steps: m.steps })));
-    setMobileTab('assistant');
+    const msgs = r.messages || [];
+    const lastA = [...msgs].reverse().find(m => m.role === 'assistant');
+    const lastU = [...msgs].reverse().find(m => m.role === 'user');
+    setConvId(id); setLastQ(lastU?.content || ''); setAnswer(lastA ? { text: lastA.content } : null); setHistoryOpen(false);
   }
-  function newChat() { setConvId(null); setMsgs([]); }
 
   // ── Talk (Gemini Live) ──
-  const appendLive = (role, text) => setMsgs((m) => {
-    const last = m[m.length - 1];
-    if (last && last.live && last.role === role) return [...m.slice(0, -1), { ...last, content: last.content + text }];
-    return [...m.map(x => (x.live ? { ...x, live: false } : x)), { role, content: text, live: true }];
-  });
   async function toggleTalk() {
-    if (live) { liveRef.current?.stop(); liveRef.current = null; setLive(null); setSpeaking(false); loadHistory(); return; }
-    if (demo) { setMsgs(m => [...m, { role: 'error', content: 'Talk is live voice with your own Gemini key. Turn Demo off and add the key in Settings → Voice to try it.' }]); return; }
-    if (!status?.voice) { setMsgs(m => [...m, { role: 'error', content: 'Talk needs your Gemini API key — add it in Settings → Voice.' }]); return; }
-    if (!isGeminiLiveSupported()) { setMsgs(m => [...m, { role: 'error', content: 'This browser cannot open the microphone here (it needs HTTPS and a modern browser).' }]); return; }
-    setLive('connecting');
+    if (live) { liveRef.current?.stop(); liveRef.current = null; setLive(null); setSpeaking(false); return; }
+    if (demo) { setAnswer({ text: 'Talk is live voice with your own Gemini key. Turn Demo off and add the key in Settings → Voice to try it.', error: true }); return; }
+    if (!status?.voice) { setAnswer({ text: 'Talk needs your Gemini API key — add it in Settings → Voice.', error: true }); return; }
+    if (!isGeminiLiveSupported()) { setAnswer({ text: 'This browser cannot open the microphone here (it needs HTTPS and a modern browser).', error: true }); return; }
+    setLive('connecting'); turnRef.current = { user: '', bot: '' };
     const s = createGeminiLive({
-      onReady: () => setLive('on'),
-      onTranscript: (role, text) => appendLive(role === 'user' ? 'user' : 'assistant', text),
-      onTool: (t) => onStep({ ...t, phase: t.phase }),
+      onReady: () => setLive('live'),
+      onTranscript: (role, text) => {
+        const t = turnRef.current;
+        if (role === 'user') { if (t.bot) { t.bot = ''; t.user = ''; } t.user += text; setLastQ(t.user.trim()); }
+        else { t.bot += text; setAnswer({ text: t.bot.trim() }); }
+      },
+      onTool: onStep,
       onConversation: (id) => setConvId(id),
       onSpeakingChange: setSpeaking,
-      onTurnComplete: () => setMsgs(m => m.map(x => (x.live ? { ...x, live: false } : x))),
-      onError: (e) => setMsgs(m => [...m, { role: 'error', content: String(e) }]),
+      onTurnComplete: () => { setTimeout(() => setProc([]), 1500); },
+      onError: (e) => setAnswer({ text: String(e), error: true }),
       onClose: () => { liveRef.current = null; setLive(null); setSpeaking(false); },
     });
     liveRef.current = s;
-    try { await s.start(); } catch (e) { s.stop(); liveRef.current = null; setLive(null); setMsgs(m => [...m, { role: 'error', content: e.message || 'Could not start the microphone.' }]); }
+    try { await s.start(); } catch (e) { s.stop(); liveRef.current = null; setLive(null); setAnswer({ text: e.message || 'Could not start the microphone.', error: true }); }
   }
   useEffect(() => () => liveRef.current?.stop(), []);
 
   async function decide(a, ok) {
-    try {
-      if (ok) await api.post(`/actions/${a.id}/confirm`);
-      else await api.post(`/actions/${a.id}/discard`);
-    } catch (e) { setMsgs(m => [...m, { role: 'error', content: e.message }]); }
+    try { await api.post(`/actions/${a.id}/${ok ? 'confirm' : 'discard'}`); }
+    catch (e) { setAnswer({ text: e.message, error: true }); }
     load(['drafts', ...(ok ? ({ chat_message: ['chats'], email: ['mail'], email_reply: ['mail'], calendar_event: ['calendar'], task: ['tasks'], task_done: ['tasks'] }[a.kind] || []) : [])]);
   }
 
   // ── derived ──
   const today = todayYmd();
-  const openTasks = (d.tasks || []).filter(t => t.status !== 'completed');
+  const openTasks = (d.tasks || []).filter(t => t.status !== 'completed').sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999'));
   const overdue = openTasks.filter(t => t.due && t.due < today);
   const todaysEvents = (d.calendar || []).filter(e => ymd(e.start) === today);
-  const upcoming = (d.calendar || []).filter(e => ymd(e.start) > today).slice(0, 4);
+  const nextEvents = (d.calendar || []).filter(e => new Date(e.end || e.start) >= new Date()).slice(0, 3);
   const unread = (d.mail || []).filter(m => m.unread);
   const waiting = (d.chats || []).filter(c => c.waitingForReply);
   const pending = (d.drafts || []).filter(a => a.status === 'pending');
   const week = useMemo(() => { const s = new Date(); const dow = (s.getDay() + 6) % 7; return Array.from({ length: 7 }, (_, i) => ymd(addDays(s, i - dow))); }, []);
-  const thinking = busy || live === 'connecting';
   const firstName = String(user.name || '').split(' ')[0];
   const setupMissing = status && !status.model;
+  const idle = !busy && !answer && !lastQ;
+  const open = (view, id = null) => setSheet({ view, id });
+  const loading = <Loader2 size={14} className="spin muted" />;
 
-  const err = (p, label, section) => (errs[p] === 'google' ? <NeedsSetup what={label} section={section} /> : errs[p] ? <div className="banner err">{errs[p]}</div> : null);
-
-  const leftCol = (
-    <div className={`col ${mobileTab === 'today' ? 'show' : ''}`}>
-      <Station id="calendar" icon={CalendarDays} color="#d97706" title="Calendar" count={todaysEvents.length} lit={lit.calendar} onOpen={() => setSheet({ view: 'calendar' })}>
-        {err('calendar', 'Google Calendar', 'google') || (
-          <>
-            <div className="weekstrip" data-testid="weekstrip">
-              {week.map((day, i) => {
-                const n = (d.calendar || []).filter(e => ymd(e.start) === day).length;
-                return (
-                  <div key={day} className={day === today ? 't' : ''}>
-                    <div style={{ fontSize: 9, fontWeight: 700, opacity: 0.8 }}>{'MTWTFSS'[i]}</div>
-                    <div style={{ fontSize: 12, fontWeight: 800 }}>{Number(day.slice(8))}</div>
-                    <div style={{ height: 5, display: 'flex', justifyContent: 'center', gap: 2, marginTop: 1 }}>
-                      {Array.from({ length: Math.min(n, 3) }, (_, k) => <span key={k} style={{ width: 4, height: 4, borderRadius: 2, background: day === today ? '#fff' : '#d97706' }} />)}
-                    </div>
-                  </div>
-                );
-              })}
+  const bodies = {
+    calendar: errs.calendar === 'google' ? <NeedsSetup what="Google Calendar" section="google" /> : d.calendar === null ? loading : (
+      <>
+        <div className="weekstrip">
+          {week.map((day, i) => {
+            const n = (d.calendar || []).filter(e => ymd(e.start) === day).length;
+            return (
+              <div key={day} className={day === today ? 't' : day < today ? 'past' : ''}>
+                <div className="wd">{'MTWTFSS'[i]}</div><div className="dn">{Number(day.slice(8))}</div>
+                <div className="dots">{Array.from({ length: Math.min(n, 3) }, (_, k) => <span key={k} />)}</div>
+              </div>
+            );
+          })}
+        </div>
+        {nextEvents.length ? nextEvents.map(e => (
+          <div key={e.id} className="st-row"><Clock size={12} color="#d97706" /><span className="grow clip">{e.title}</span><span className="st-meta">{ymd(e.start) === today ? (e.allDay ? 'Today' : timeOf(e.start)) : `${new Date(e.start).toLocaleDateString(undefined, { weekday: 'short' })} ${new Date(e.start).getDate()}`}</span></div>
+        )) : <div className="st-muted">Nothing coming up</div>}
+      </>
+    ),
+    chats: status && !status.whatsapp && !status.telegram ? <NeedsSetup what="WhatsApp or Telegram" section="whatsapp" /> : d.chats === null ? loading : !d.chats.length ? <div className="st-muted">No messages yet</div> : (
+      <>
+        {waiting.length > 0 && <div className="st-big"><b>{waiting.length}</b><span className="st-meta">waiting for your reply</span></div>}
+        {(waiting.length ? waiting : d.chats).slice(0, 3).map(c => (
+          <div key={c.chatId} className="st-row fa-mini-row" role="button" tabIndex={0} data-testid="mini-chat" onClick={stop(() => open('chats', String(c.chatId)))}>
+            <Avatar name={c.name} size={24} />
+            <div className="grow" style={{ minWidth: 0 }}>
+              <div className="row" style={{ gap: 5 }}><span className="st-name clip">{c.name}</span><span className={`chan ${c.channel}`}>{c.channel === 'whatsapp' ? 'WA' : 'TG'}</span></div>
+              <div className="st-meta clip">{c.lastMessage}</div>
             </div>
-            {d.calendar === null ? <Loader2 size={16} className="spin muted" /> : !todaysEvents.length && <div className="muted" style={{ fontSize: 13, padding: '4px 2px' }}>Nothing on your calendar today.</div>}
-            {todaysEvents.map(e => (
-              <button key={e.id} className="mini-row" onClick={() => setSheet({ view: 'calendar' })}>
-                <Clock size={13} color="#d97706" /><span className="t grow clip">{e.title}</span><span className="s">{e.allDay ? 'All day' : timeOf(e.start)}</span>
-              </button>
-            ))}
-            {upcoming.length > 0 && <div className="eyebrow" style={{ marginTop: 4 }}>Coming up</div>}
-            {upcoming.map(e => (
-              <button key={e.id} className="mini-row" onClick={() => setSheet({ view: 'calendar' })}>
-                <span className="t grow clip">{e.title}</span><span className="s">{new Date(e.start).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}</span>
-              </button>
-            ))}
-          </>
-        )}
-      </Station>
-      <Station id="mail" icon={Mail} color="#2563eb" title="Mail" count={unread.length} lit={lit.mail} onOpen={() => setSheet({ view: 'mail' })}>
-        {err('mail', 'Gmail', 'google') || (d.mail === null ? <Loader2 size={16} className="spin muted" /> : !d.mail.length ? <div className="empty">Inbox is empty.</div> : d.mail.slice(0, 8).map(m => (
-          <button key={m.id} className="mini-row" onClick={() => setSheet({ view: 'mail', id: m.id })} data-testid="mini-mail">
-            <Avatar name={senderName(m.from)} size={26} />
-            <div className="grow"><div className="t clip" style={{ fontWeight: m.unread ? 800 : 600 }}>{senderName(m.from)}</div><div className="s clip">{m.subject}</div></div>
-            <span className="s">{ago(m.date)}</span>
-          </button>
-        )))}
-      </Station>
-      <Station id="history" icon={History} color="#7c3aed" title="Conversations" lit={false} flex
-        action={<button className="btn ghost sm" onClick={newChat} title="New conversation"><Plus size={14} />New</button>}>
-        {!history.length ? <div className="empty">Your conversations with Forge will appear here.</div> : history.map(c => (
-          <div key={c.id} className="row" style={{ gap: 4 }}>
-            <button className="mini-row grow" onClick={() => openConversation(c.id)} style={convId === c.id ? { background: 'var(--fc-primary-faint)' } : undefined}>
-              <span className="t grow clip">{c.title}</span><span className="s">{ago(`${c.updated_at.replace(' ', 'T')}Z`)}</span>
-            </button>
-            <button className="btn ghost icon" aria-label="Delete conversation" onClick={async () => { await api.del(`/assistant/conversations/${c.id}`); if (convId === c.id) newChat(); loadHistory(); }}><Trash2 size={13} /></button>
+            <span className="st-meta">{ago(c.lastAt)}</span>
           </div>
         ))}
-      </Station>
+      </>
+    ),
+    tasks: errs.tasks === 'google' ? <NeedsSetup what="Google Tasks" section="google" /> : d.tasks === null ? loading : !openTasks.length ? <div className="st-muted">No open tasks</div> : (
+      <>
+        <div className="st-big"><b>{openTasks.length}</b><span className="st-meta">open{overdue.length ? ` · ${overdue.length} overdue` : ''}</span></div>
+        {openTasks.slice(0, 3).map(t => (
+          <div key={t.id} className="st-row">
+            <button className="check" aria-label={`Mark ${t.title} done`} onClick={stop(async () => { await api.patch(`/tasks/${encodeURIComponent(t.listId)}/${encodeURIComponent(t.id)}`, { status: 'completed' }).catch(() => {}); load(['tasks']); })} />
+            <span className="grow clip">{t.title}</span>
+            {t.due && <span className={`pill ${t.due < today ? 'red' : t.due === today ? 'amber' : ''}`}>{t.due === today ? 'Today' : new Date(`${t.due}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
+          </div>
+        ))}
+      </>
+    ),
+    mail: errs.mail === 'google' ? <NeedsSetup what="Gmail" section="google" /> : d.mail === null ? loading : !d.mail.length ? <div className="st-muted">Inbox is empty</div> : (
+      <>
+        {unread.length > 0 && <div className="st-big"><b>{unread.length}</b><span className="st-meta">unread</span></div>}
+        {(unread.length ? unread : d.mail).slice(0, 3).map(m => (
+          <div key={m.id} className="st-row fa-mini-row" role="button" tabIndex={0} data-testid="mini-mail" onClick={stop(() => open('mail', m.id))}>
+            <Avatar name={senderName(m.from)} size={24} />
+            <div className="grow" style={{ minWidth: 0 }}><div className="st-name clip" style={{ fontWeight: m.unread ? 800 : 600 }}>{senderName(m.from)}</div><div className="st-meta clip">{m.subject}</div></div>
+            <span className="st-meta">{ago(m.date)}</span>
+          </div>
+        ))}
+      </>
+    ),
+    drafts: d.drafts === null ? loading : !pending.length ? <div className="st-muted">Nothing waiting — drafts Forge prepares land here.</div> : pending.slice(0, 3).map(a => (
+      <div key={a.id} className="st-row draft" data-testid="draft-row">
+        {draftIcon(a.kind)}
+        <span className="grow clip" style={{ fontWeight: 600 }}>{a.title}</span>
+        <button className="btn primary sm" onClick={stop(() => decide(a, true))}><Check size={12} />Send</button>
+        <button className="btn ghost icon sm" aria-label="Discard" onClick={stop(() => decide(a, false))}><X size={13} /></button>
+      </div>
+    )),
+  };
+  const counts = { calendar: todaysEvents.length, chats: waiting.length, tasks: overdue.length, mail: unread.length, drafts: pending.length };
+  const rail = (side, ids) => (
+    <div className={`rail rail-${side} fa-scroll`} data-testid={`rail-${side}`}>
+      <div className="rail-in">
+        {ids.map(id => <Station key={id} id={id} count={counts[id]} used={used.includes(id)} scanning={scan.includes(id)} onOpen={() => open(id)}>{bodies[id]}</Station>)}
+      </div>
     </div>
   );
-
-  const rightCol = (
-    <div className={`col ${mobileTab === 'work' ? 'show' : ''}`}>
-      <Station id="tasks" icon={ListTodo} color="#16a34a" title="Tasks" count={overdue.length} lit={lit.tasks} onOpen={() => setSheet({ view: 'tasks' })}>
-        {err('tasks', 'Google Tasks', 'google') || (d.tasks === null ? <Loader2 size={16} className="spin muted" /> : !openTasks.length ? <div className="empty">No open tasks. Nice.</div> : (
-          <>
-            <div className="muted" style={{ fontSize: 12.5 }}>{openTasks.length} open{overdue.length ? ` · ${overdue.length} overdue` : ''}</div>
-            {openTasks.slice().sort((a, b) => (a.due || '9999').localeCompare(b.due || '9999')).slice(0, 7).map(t => (
-              <div key={t.id} className="mini-row" style={{ cursor: 'default' }}>
-                <button className="check" aria-label={`Mark ${t.title} done`} onClick={async () => { await api.patch(`/tasks/${encodeURIComponent(t.listId)}/${encodeURIComponent(t.id)}`, { status: 'completed' }).catch(() => {}); load(['tasks']); }} />
-                <span className="t grow clip">{t.title}</span>
-                {t.due && <span className={`pill ${t.due < today ? 'red' : t.due === today ? 'amber' : ''}`}>{t.due === today ? 'Today' : new Date(`${t.due}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</span>}
-              </div>
-            ))}
-          </>
-        ))}
-      </Station>
-      <Station id="chats" icon={MessagesSquare} color="#0891b2" title="Chats" count={waiting.length} lit={lit.chats} onOpen={() => setSheet({ view: 'chats' })}>
-        {status && !status.whatsapp && !status.telegram ? <NeedsSetup what="WhatsApp or Telegram" section="whatsapp" /> : d.chats === null ? <Loader2 size={16} className="spin muted" /> : !d.chats.length ? <div className="empty">No messages yet. They arrive here from your WhatsApp and Telegram webhooks.</div> : d.chats.slice(0, 7).map(c => (
-          <button key={c.chatId} className="mini-row" onClick={() => setSheet({ view: 'chats', id: String(c.chatId) })} data-testid="mini-chat">
-            <Avatar name={c.name} size={26} />
-            <div className="grow"><div className="row" style={{ gap: 6 }}><span className="t clip">{c.name}</span><span className={`pill ${c.channel === 'whatsapp' ? 'green' : 'blue'}`} style={{ padding: '1px 6px', fontSize: 10 }}>{c.channel === 'whatsapp' ? 'WA' : 'TG'}</span></div><div className="s clip">{c.lastMessage}</div></div>
-            <span className="s">{ago(c.lastAt)}</span>
-            {c.unread > 0 && <span className="pill red">{c.unread}</span>}
-          </button>
-        ))}
-      </Station>
-      <Station id="drafts" icon={FileCheck2} color="#dc2626" title="Drafts to approve" count={pending.length} lit={lit.drafts} onOpen={() => setSheet({ view: 'drafts' })}>
-        {d.drafts === null ? <Loader2 size={16} className="spin muted" /> : !pending.length ? <div className="empty">Nothing waiting. When Forge prepares a message, email, event or task, it lands here — nothing is sent until you press Send.</div> : pending.slice(0, 4).map(a => (
-          <div key={a.id} className="row" style={{ background: 'var(--fc-raised)', borderRadius: 10, padding: 8, gap: 8 }} data-testid="draft-row">
-            {draftIcon(a.kind)}
-            <span className="t grow clip" style={{ fontSize: 13, fontWeight: 600 }}>{a.title}</span>
-            <button className="btn sm" onClick={() => setSheet({ view: 'drafts', id: String(a.id) })}>Review</button>
-            <button className="btn primary sm" onClick={() => decide(a, true)}><Check size={13} />Send</button>
-            <button className="btn ghost icon" aria-label="Discard" onClick={() => decide(a, false)}><X size={14} /></button>
-          </div>
-        ))}
-      </Station>
+  const sources = !answer?.error && used.length > 0 && (
+    <div className="sources">
+      {used.map(id => { const I = STATION[id].Icon; return <button key={id} type="button" onClick={() => open(id)} data-testid="answer-source"><I size={12} />Open {STATION[id].title.replace(' to approve', '')}</button>; })}
     </div>
   );
 
   return (
-    <>
-      <div className="mtabs" role="tablist">
-        {[['assistant', 'Assistant'], ['today', 'Today'], ['work', 'Work']].map(([k, l]) => (
-          <button key={k} className={mobileTab === k ? 'on' : ''} onClick={() => setMobileTab(k)}>{l}</button>
-        ))}
+    <main className={`fa-office office2 ${idle ? 'idle' : 'answering'}`} data-testid="office">
+      <div className="toolbar">
+        {(answer || convId) && <RoundBtn title="New conversation" testid="new-chat" onClick={newChat}><Plus size={16} /></RoundBtn>}
+        <RoundBtn title="Conversations" testid="open-history" onClick={() => setHistoryOpen(true)}><History size={16} /></RoundBtn>
+        <a className="roundbtn" href="#/settings" title="Settings" aria-label="Settings"><Settings2 size={16} /></a>
       </div>
-      <main className="office floor">
-        {leftCol}
-        <div className={`center ${mobileTab === 'assistant' ? 'show' : ''}`}>
-          <div className="stage">
-            <div className="logo">
-              <div className={`fa-halo ${thinking || speaking || live === 'on' ? 'on' : ''}`} />
-              <ForgeMindLogo thinking={thinking} expression={speaking ? 'happy' : busy ? 'focused' : 'neutral'} />
+      {proc.length > 0 && (
+        <div className="proc-lines" data-testid="proc-lines">
+          {proc.map(l => (
+            <div key={l.id} className="fa-proc-line">
+              {l.status === 'running' ? <Loader2 size={12} className="spin" /> : l.status === 'error' ? <AlertTriangle size={12} color="#fca5a5" /> : <CheckCircle2 size={12} color="#86efac" />}{l.label}
             </div>
-            {!msgs.length && (
-              <>
-                <div className="hello">Hi {firstName}, I'm Forge.</div>
-                <div className="sub">Ask about your tasks, calendar, mail or chats. I prepare drafts — you press Send.</div>
-              </>
-            )}
-            {live && <div className="pill red" style={{ marginTop: 6 }} data-testid="live-pill"><span className="fa-live-dot" style={{ width: 7, height: 7, borderRadius: 4, background: 'currentColor' }} />{live === 'connecting' ? 'Connecting voice…' : speaking ? 'Speaking' : 'Listening'}</div>}
-          </div>
-          {demo && (
-            <div className="banner info demo-banner" data-testid="demo-banner">
-              <strong>Demo mode</strong> — sample tasks, calendar, mail and chats so you can see how Open Forge AI works. Try a suggestion below. Turn <strong>Demo</strong> off in the top bar to use your own accounts.
-            </div>
-          )}
-          {!demo && setupMissing && (
-            <div className="banner info" style={{ margin: '10px 4px 0' }} data-testid="setup-banner">
-              Start by adding your model key: <a href="#/settings/model">Settings → Model</a> (OpenAI or Anthropic). Then connect Google, WhatsApp or Telegram for the cards.
-            </div>
-          )}
-          <div className="chatlog scroll" ref={logRef} data-testid="chatlog">
-            {!msgs.length && <div className="suggest">{SUGGESTIONS.map(s => <button key={s} onClick={() => ask(s)}>{s}</button>)}</div>}
-            {msgs.map((m, i) => (
-              <div key={i} className={`bubble ${m.role === 'user' ? 'user' : m.role === 'error' ? 'err' : 'bot'} fa-answer-in`}>
-                {m.steps?.length > 0 && <div className="steps">{m.steps.map((s, j) => <span key={j} className={`pill ${s.status === 'error' ? 'red' : ''}`}>{s.status === 'error' ? <X size={11} /> : <Check size={11} />}{s.label}</span>)}</div>}
-                {m.role === 'assistant' ? <Answer text={m.content} /> : m.content}
-              </div>
-            ))}
-            {running.length > 0 && <div className="bubble bot" style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span className="fa-dots"><span /><span /><span /></span><span className="muted">{running[running.length - 1]}…</span></div>}
-            {busy && !running.length && <div className="bubble bot"><span className="fa-dots muted"><span /><span /><span /></span></div>}
-          </div>
-          <form className="composer" onSubmit={(e) => { e.preventDefault(); ask(); }}>
-            <textarea value={input} rows={1} placeholder={live ? 'Speak, or type to Forge…' : 'Ask Forge anything…'} aria-label="Message Forge"
-              onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(); } }} />
-            <button type="button" className={`btn talk ${live ? 'live' : ''}`} onClick={toggleTalk} title={live ? 'Stop talking' : 'Talk to Forge'} data-testid="talk-btn">
-              {live === 'connecting' ? <Loader2 size={16} className="spin" /> : live ? <MicOff size={16} /> : <Mic size={16} />}{live ? 'Stop' : 'Talk'}
-            </button>
-            {busy ? (
-              <button type="button" className="btn" onClick={() => abortRef.current?.abort()} aria-label="Stop"><Square size={14} /></button>
-            ) : (
-              <button className="btn primary" disabled={!input.trim()} aria-label="Send"><Send size={16} /></button>
-            )}
-          </form>
-          <div className="muted" style={{ fontSize: 11.5, textAlign: 'center', marginTop: 6 }}>
-            {demo ? <>Sample data · </> : status?.model ? <>Model: <span className="mono">{status.modelName}</span> · </> : null}<a href="#/settings" style={{ color: 'inherit' }}><Cog size={11} style={{ verticalAlign: -1 }} /> Settings</a>
+          ))}
+        </div>
+      )}
+
+      {rail('left', LEFT)}
+      {rail('right', RIGHT)}
+
+      <section className="centre">
+        <div className="bot" data-testid="assistant-logo">
+          <div className={`fa-halo ${busy || speaking || live === 'live' ? 'on' : ''}`} />
+          <div className="logo-float-anim" style={{ position: 'relative' }}>
+            <ForgeMindLogo thinking={busy} lookAtRef={typing ? inputRef : null}
+              expression={busy ? 'focused' : speaking ? 'happy' : answer?.error ? 'surprised' : answer ? 'happy' : 'neutral'} />
           </div>
         </div>
-        {rightCol}
-      </main>
-      {sheet && <Sheet key={String(demo)} sheet={sheet} setSheet={setSheet} data={d} errs={errs} status={status} reload={load} decide={decide} DraftCard={DraftCard} />}
-    </>
+        <div className="centre-body" data-testid="chatlog">
+          {idle && (
+            <>
+              <div className="greeting" data-testid="greeting">Hi{firstName ? ` ${firstName}` : ''}, I'm Forge AI</div>
+              <div className="tagline"><ShieldCheck size={14} color="#16a34a" />I read your tasks, calendar, mail and chats. I only prepare drafts — nothing is sent until you press Send.</div>
+              {demo && <div className="banner info demo-banner" data-testid="demo-banner"><FlaskConical size={14} style={{ verticalAlign: -2, marginRight: 4 }} /><strong>Demo mode</strong> — sample data so you can see how it works. Turn <strong>Demo</strong> off in the top bar to use your own accounts.</div>}
+              {!demo && setupMissing && <div className="banner warn" data-testid="setup-banner"><AlertTriangle size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Add your model key in <a href="#/settings/model">Settings → Model</a> (OpenAI or Anthropic), then connect Google, WhatsApp or Telegram.</div>}
+              <div className="suggest">{SUGGESTIONS.map((s, i) => <button key={s} className={i === 0 ? 'first' : ''} onClick={() => ask(s)}>{i === 0 && <Sparkles size={13} />}{s}</button>)}</div>
+            </>
+          )}
+          {lastQ && <div className="asked" data-testid="asked">“{lastQ}”</div>}
+          {busy && !answer && <div className="answer-card thinking"><span className="fa-dots"><span /><span /><span /></span></div>}
+          {answer && (
+            <div className={`answer-card fa-answer-in fa-scroll ${answer.error ? 'err' : ''}`} data-testid="answer">
+              {answer.error ? <div className="row" style={{ alignItems: 'flex-start', gap: 8 }}><AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} /><span>{answer.text}</span></div> : <Answer text={answer.text} />}
+              {sources}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <form className="composer2" onSubmit={(e) => { e.preventDefault(); ask(); }}>
+        {live && (
+          <span className="live-ind" data-testid="live-pill"><span className={live === 'live' ? 'fa-live-dot' : ''} />{live === 'connecting' ? 'Connecting…' : speaking ? 'Speaking' : 'Listening'}</span>
+        )}
+        <input ref={inputRef} value={input} aria-label="Message Forge" data-testid="assistant-input"
+          placeholder={live === 'live' ? 'Talk, or type here…' : 'Ask Forge AI, or tell it what to prepare…'}
+          onChange={(e) => { setInput(e.target.value); setTyping(!!e.target.value); }} onBlur={() => setTyping(false)} />
+        <button type="button" className={`talkbtn ${live ? 'on' : ''}`} onClick={toggleTalk} data-testid="talk-btn" title={live ? 'End live voice' : 'Talk to Forge AI'}>
+          {live === 'connecting' ? <Loader2 size={16} className="spin" /> : live ? <><PhoneOff size={16} />End</> : <><Mic size={16} />Talk</>}
+        </button>
+        {busy && !live ? (
+          <button type="button" className="sendbtn" onClick={() => abortRef.current?.abort()} aria-label="Stop"><Loader2 size={17} className="spin" /></button>
+        ) : (
+          <button className="sendbtn" disabled={!input.trim()} aria-label="Send"><Send size={17} /></button>
+        )}
+      </form>
+
+      {sheet && <Sheet key={String(demo)} sheet={sheet} setSheet={setSheet} data={d} errs={errs} status={status} reload={load} decide={decide} />}
+      {historyOpen && <HistoryModal api={api} convId={convId} onOpen={openConversation} onClose={() => setHistoryOpen(false)} onNew={() => { newChat(); setHistoryOpen(false); }} />}
+    </main>
+  );
+}
+
+function HistoryModal({ api, convId, onOpen, onClose, onNew }) {
+  const [list, setList] = useState(null);
+  const [sel, setSel] = useState(convId);
+  const [msgs, setMsgs] = useState(null);
+  const reload = useCallback(() => api.get('/assistant/conversations').then(r => setList(r.conversations)).catch(() => setList([])), [api]);
+  useEffect(() => { reload(); }, [reload]);
+  useEffect(() => { if (!sel) { setMsgs(null); return; } setMsgs(null); api.get(`/assistant/conversations/${sel}`).then(r => setMsgs(r.messages)).catch(() => setMsgs([])); }, [sel, api]);
+  return (
+    <Modal title="Conversations" onClose={onClose} wide>
+      <div className="sheet-body" data-testid="sheet-history">
+        <div className="split">
+          <div className="pane">
+            <div style={{ padding: 8 }}><button className="btn sm" onClick={onNew}><Plus size={14} />New conversation</button></div>
+            <div className="scroll" style={{ flex: 1 }}>
+              {list === null ? <div className="empty"><Loader2 size={16} className="spin" /></div> : !list.length ? <div className="empty">No conversations yet.</div> : list.map(c => (
+                <div key={c.id} className={`list-item ${sel === c.id ? 'on' : ''}`} role="button" tabIndex={0} onClick={() => setSel(c.id)}>
+                  <div className="grow"><div className="clip" style={{ fontWeight: 700, fontSize: 13.5 }}>{c.title}</div><div className="muted" style={{ fontSize: 12 }}>{ago(`${String(c.updated_at).replace(' ', 'T')}Z`)}</div></div>
+                  <button className="btn ghost icon sm" aria-label="Delete conversation" onClick={async (e) => { e.stopPropagation(); await api.del(`/assistant/conversations/${c.id}`); if (sel === c.id) setSel(null); reload(); }}><Trash2 size={13} /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="pane">
+            {!sel ? <div className="empty" style={{ margin: 'auto' }}>Pick a conversation to read it.</div> : msgs === null ? <div className="empty" style={{ margin: 'auto' }}><Loader2 size={16} className="spin" /></div> : (
+              <>
+                <div className="thread scroll">
+                  {msgs.map((m, i) => <div key={i} className={`msg ${m.role === 'user' ? 'out' : 'in'}`}>{m.role === 'assistant' ? <Answer text={m.content} /> : m.content}</div>)}
+                </div>
+                <div style={{ padding: 10, display: 'flex', justifyContent: 'flex-end' }}><button className="btn primary" onClick={() => onOpen(sel)}>Continue this conversation</button></div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </Modal>
   );
 }

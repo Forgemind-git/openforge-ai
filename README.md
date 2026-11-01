@@ -52,7 +52,8 @@ Keys are entered on the **Settings** page and stored **encrypted** (AES-256-GCM)
 
 ## Features
 
-- **Office view** — Calendar, Mail and Conversations on the left; the animated Forge assistant and chat in the middle; Tasks, Chats and Drafts on the right. Light and dark themes.
+- **Office view** — the same layout as the Forge AI assistant in Forge Growth: slim rails of cards (Calendar, Chats, Tasks · Mail, Drafts) that open full size on click, the animated Forge in the middle with its latest answer, a floating composer at the bottom. Light and dark themes.
+- **Conversations** — every typed and spoken conversation is saved; reopen and continue any of them from the history button.
 - **Demo mode** — sample data in every card so you can see it working before connecting anything.
 - **Chat with tools** — Forge reads your real data through tools (overview of the day, tasks, events, mail search/read, chats) and opens the relevant card on screen.
 - **Talk** — live, interruptible voice with Gemini Live, using the same tools. Transcripts are saved to your conversation history.
@@ -64,7 +65,9 @@ Keys are entered on the **Settings** page and stored **encrypted** (AES-256-GCM)
 - **Multi-user** — the first visitor creates the admin account (no default password); the admin adds more people. Everyone's keys and data are separate.
 - Phone numbers are masked in the assistant's view and answers.
 
-## Quick start (Docker)
+## Quick start
+
+You need **Docker** (with Compose v2). Everything else runs in one container.
 
 ```bash
 git clone https://github.com/Forgemind-git/open-forge.git
@@ -73,36 +76,25 @@ cp .env.example .env          # set PUBLIC_URL to the address you will open
 docker compose up -d --build
 ```
 
-Open `http://localhost:3000` (or your `PUBLIC_URL`) and **create the admin account**. Then go to **Settings** and add your keys.
+Open `http://localhost:3000` (or your `PUBLIC_URL`), **create the admin account**, then add your keys in **Settings**. Until you connect something, the app opens in **demo mode** so you can look around.
 
-> WhatsApp and Telegram webhooks, and Google sign-in on anything but localhost, need a **public HTTPS** address. Put Open Forge AI behind a reverse proxy with TLS (see below) and set `PUBLIC_URL` to that address.
+> **HTTPS is required for the real integrations.** WhatsApp and Telegram can only deliver webhooks to a public HTTPS address, Google sign-in needs a registered redirect URL, and browsers only allow the microphone (Talk) on HTTPS. Use `localhost` for a look around; put it behind a TLS proxy for real use.
 
-### Behind Traefik
+**→ Full deployment guide: [docs/DEPLOY.md](docs/DEPLOY.md)** — a VPS from scratch, Traefik / Caddy / nginx, running without Docker, upgrades, backups, monitoring and troubleshooting.
 
-`docker-compose.traefik.yml` attaches the container to an existing Traefik network and requests a Let's Encrypt certificate:
+### Configuration (`.env`)
 
-```bash
-# in .env
-PUBLIC_URL=https://openforge.example.com
-OPENFORGE_HOST=openforge.example.com
-TRAEFIK_NETWORK=traefik          # the external network Traefik watches
-TRAEFIK_CERTRESOLVER=letsencrypt # your certificate resolver's name
+| Variable | Default | Meaning |
+|---|---|---|
+| `PUBLIC_URL` | derived from the request | Public origin, no trailing slash. Builds the Google redirect URI and the webhook URLs. **Set it** in production. |
+| `OPENFORGE_PORT` | `3000` | Host port published by `docker-compose.yml`. |
+| `SESSION_SECRET` | generated | Signs login cookies. Blank = random, stored in the data volume. |
+| `ENCRYPTION_KEY` | generated | Encrypts every saved key (AES-256-GCM). Blank = random, stored in the data volume. **Changing it later makes saved keys unreadable.** |
+| `OPENFORGE_GITHUB_REPO` | `Forgemind-git/open-forge` | Repo for the GitHub star button in the top bar; `none` hides it. |
+| `DEMO_LOGIN_EMAIL`, `DEMO_LOGIN_PASSWORD` | off | For a public demo only: seeds that account at boot and **shows** its email and password on the sign-in page. Leave blank for real use. |
+| `OPENFORGE_HOST`, `TRAEFIK_NETWORK`, `TRAEFIK_CERTRESOLVER` | — | Only for `docker-compose.traefik.yml`. |
 
-docker compose -f docker-compose.traefik.yml up -d --build
-```
-
-Any other proxy works too (nginx, Caddy): forward everything to port 3000, including **WebSocket upgrades** on `/api/assistant/live` (Talk) and unbuffered responses on `/api/assistant/chat` and `/api/events` (server-sent events).
-
-### Server settings (`.env`)
-
-| Variable | Meaning |
-|---|---|
-| `PUBLIC_URL` | Public origin, no trailing slash. Builds the OAuth redirect and webhook URLs. If empty, it is derived from the request headers. |
-| `OPENFORGE_PORT` | Host port for `docker-compose.yml` (default 3000). |
-| `DEMO_LOGIN_EMAIL`, `DEMO_LOGIN_PASSWORD` | Optional, off by default. Seeds that account at boot and shows its email + password on the sign-in page — for a public demo only. |
-| `SESSION_SECRET`, `ENCRYPTION_KEY` | Optional. If blank, random values are generated on first boot and stored in the data volume. **Changing `ENCRYPTION_KEY` later makes saved keys unreadable** (everyone re-enters them). |
-
-Data (SQLite database + generated secrets) lives in the `openforge-data` volume at `/data`. Back that up.
+All data — the SQLite database and the generated secrets — lives in the `openforge-data` volume at `/data`. **Back it up** (see the deploy guide).
 
 ## Setting up each integration
 
@@ -139,6 +131,43 @@ Messages people send to your number now appear in **Chats**. WhatsApp only allow
 ## How the "never sends on its own" rule is enforced
 The assistant's tool list (`server/src/assistant/tools.js`) contains only **read** tools and `prepare_*` tools. A `prepare_*` tool only inserts a row into the `actions` table. The code that actually sends (`server/src/assistant/actions.js`) is reachable only from `POST /api/actions/:id/confirm` — the button on the Drafts card — and claims the draft atomically so a double click cannot send twice. `server/test/tools.test.js` fails if a tool that acts directly is added.
 
+## How it works
+
+```
+Browser (React)  ──HTTPS──>  Open Forge AI server (Node/Express, one container)
+   │  cards, chat, settings         │  SQLite in /data (users, encrypted keys, chats, drafts, conversations)
+   │                                ├── OpenAI / Anthropic  (chat + tool calling, your key)
+   └── Talk: WebSocket ───────────> ├── Gemini Live          (voice, your key — the server proxies it)
+                                    ├── Google APIs           (Gmail, Calendar, Tasks — your OAuth client)
+   Meta / Telegram ──webhooks────>  ├── WhatsApp Cloud API    (send replies)
+                                    └── Telegram Bot API      (send replies)
+```
+
+- **One process** serves the API and the built web app; there is no separate database server. SQLite runs in WAL mode — plenty for a team.
+- **Per-user everything.** Each account has its own keys, Google connection, WhatsApp number, Telegram bot, chats, drafts and conversations. Webhook URLs carry an unguessable per-user id.
+- **The assistant loop** (`server/src/routes/assistant.js`): the model sees a system prompt with the current date/time in your time zone and a list of tools; it calls tools, the server runs them as you, and streams each step to the page (server-sent events) so the right card lights up and opens.
+- **Talk** (`server/src/assistant/live.js`): the browser streams 16 kHz microphone audio over a WebSocket; the server relays it to Gemini Live with the same tools and streams the voice back.
+
+### Project layout
+
+```
+server/src/
+  index.js              Express app: security headers, routes, static web app, WebSocket
+  auth.js               accounts, sessions, first-run admin, optional demo login
+  store.js crypto.js    per-user integration settings, AES-256-GCM
+  db.js                 SQLite schema (created at boot)
+  assistant/            tools.js (read + prepare_* only), actions.js (runs a draft on Send), live.js (Gemini Live)
+  integrations/         llm.js (OpenAI/Anthropic), google.js, messaging.js (WhatsApp + Telegram)
+  routes/               settings, assistant, data (cards), public (OAuth return + webhooks)
+server/test/            node:test — the "never sends on its own" guarantees
+web/src/
+  pages/Office.jsx      the office: rails, Forge, answer, composer, Talk
+  pages/Sheets.jsx      cards opened full size (tasks board, calendar, mail, chats, drafts)
+  pages/Settings.jsx    keys and connections
+  lib/demo.js           demo-mode sample data and scripted answers
+  lib/geminiLive.js     browser half of Talk (AudioWorklets)
+```
+
 ## Development
 
 ```bash
@@ -154,6 +183,9 @@ Stack: Node 20 + Express + better-sqlite3 + ws · React 18 + Vite · lucide icon
 - Sessions are httpOnly cookies. The Talk WebSocket checks the cookie and the page origin.
 - Webhook URLs contain an unguessable per-user id; WhatsApp deliveries are checked against the app-secret signature when one is set, Telegram deliveries against the registered secret token.
 - Gmail access uses `gmail.readonly` + `gmail.send` only (no delete/modify).
+
+## Contributing
+Issues and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). Please report security problems privately as described in [SECURITY.md](SECURITY.md).
 
 ## License
 Code: [MIT](LICENSE). The Forgemind AI name and logo are trademarks of Forgemind AI — keep them or replace them with your own branding when you redistribute.

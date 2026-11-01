@@ -36,5 +36,8 @@ module.exports = {
   // password on the sign-in page — only for a public demo install, never production.
   DEMO_LOGIN_EMAIL: env('DEMO_LOGIN_EMAIL'),
   DEMO_LOGIN_PASSWORD: env('DEMO_LOGIN_PASSWORD'),
+  // The GitHub repo the top bar's star button points at ("owner/name"); set to
+  // "none" to hide it. Its star count is fetched by the server and cached.
+  GITHUB_REPO: env('OPENFORGE_GITHUB_REPO') || 'Forgemind-git/open-forge',
   NODE_ENV: env('NODE_ENV') || 'development',
 };

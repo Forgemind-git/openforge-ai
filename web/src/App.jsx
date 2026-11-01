@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Sun, Moon, LogOut, Loader2, Instagram, Globe, FlaskConical } from 'lucide-react';
+import { Sun, Moon, LogOut, Loader2, Instagram, Globe, FlaskConical, Github, Star } from 'lucide-react';
 import { api } from './api';
 import { useTheme } from './lib/util';
 import { ApiContext } from './lib/apiContext';
@@ -37,6 +37,8 @@ export default function App() {
   const [pref, setPref] = useState(theme.get());
   const [demo, setDemo] = useState(readDemo());
   const hash = useHash();
+  const [meta, setMeta] = useState(null);
+  useEffect(() => { api.get('/meta').then(setMeta).catch(() => {}); }, []);
 
   useEffect(() => { theme.apply(pref); }, [pref]);
   useEffect(() => {
@@ -79,6 +81,12 @@ export default function App() {
           <button className={`demo-switch ${demo ? 'on' : ''}`} onClick={toggleDemo} role="switch" aria-checked={!!demo} title="Show sample data so you can see every card working" data-testid="demo-switch">
             <FlaskConical size={15} /><span>Demo</span><span className="knob" />
           </button>
+          {meta?.url && (
+            <a className="gh-star" href={meta.url} target="_blank" rel="noreferrer" title="Star Open Forge AI on GitHub" data-testid="gh-star">
+              <Github size={15} /><span className="gh-label">Star</span>
+              {meta.stars != null && <span className="gh-count" data-testid="gh-count"><Star size={12} />{meta.stars >= 1000 ? `${(meta.stars / 1000).toFixed(1)}k` : meta.stars}</span>}
+            </a>
+          )}
           <span className="tsep" />
           <a className="tbtn" href={LINKS.instagram} target="_blank" rel="noreferrer" title="Forgemind AI on Instagram" aria-label="Instagram"><Instagram size={17} /></a>
           <a className="tbtn" href={LINKS.website} target="_blank" rel="noreferrer" title="forgemind.in" aria-label="Website"><Globe size={17} /></a>

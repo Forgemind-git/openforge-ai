@@ -6,7 +6,7 @@ const express = require('express');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
-const { PORT } = require('./config');
+const { PORT, GITHUB_REPO } = require('./config');
 require('./db');
 const auth = require('./auth');
 const live = require('./assistant/live');
@@ -35,6 +35,22 @@ app.use(helmet({
 }));
 
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+// Star count for the top bar's GitHub button. Fetched here (not by the browser)
+// and cached for an hour, so visitors never hit GitHub's anonymous rate limit.
+// A private or missing repo simply reports stars: null.
+const gh = { at: 0, stars: null };
+app.get('/api/meta', async (req, res) => {
+  const repo = /^[\w.-]+\/[\w.-]+$/.test(GITHUB_REPO) ? GITHUB_REPO : null;
+  if (repo && Date.now() - gh.at > 3600e3) {
+    gh.at = Date.now();
+    try {
+      const r = await fetch(`https://api.github.com/repos/${repo}`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'open-forge' }, signal: AbortSignal.timeout(6000) });
+      gh.stars = r.ok ? (await r.json()).stargazers_count ?? null : null;
+    } catch { /* keep the last value */ }
+  }
+  res.json({ repo, url: repo ? `https://github.com/${repo}` : null, stars: repo ? gh.stars : null });
+});
 
 // Public (no session): OAuth return + webhooks. Mounted BEFORE the JSON parser,
 // because the WhatsApp signature is computed over the raw body.
