@@ -68,6 +68,7 @@ Any other proxy works too (nginx, Caddy): forward everything to port 3000, inclu
 |---|---|
 | `PUBLIC_URL` | Public origin, no trailing slash. Builds the OAuth redirect and webhook URLs. If empty, it is derived from the request headers. |
 | `OPENFORGE_PORT` | Host port for `docker-compose.yml` (default 3000). |
+| `DEMO_LOGIN_EMAIL`, `DEMO_LOGIN_PASSWORD` | Optional, off by default. Seeds that account at boot and shows its email + password on the sign-in page — for a public demo only. |
 | `SESSION_SECRET`, `ENCRYPTION_KEY` | Optional. If blank, random values are generated on first boot and stored in the data volume. **Changing `ENCRYPTION_KEY` later makes saved keys unreadable** (everyone re-enters them). |
 
 Data (SQLite database + generated secrets) lives in the `openforge-data` volume at `/data`. Back that up.

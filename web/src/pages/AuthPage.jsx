@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { api } from '../api';
 import ForgeMindLogo from '../components/ForgeMindLogo.jsx';
 
-export default function AuthPage({ mode, onDone, offline }) {
+export default function AuthPage({ mode, onDone, offline, demo }) {
   const setup = mode === 'setup';
   const [f, setF] = useState({ name: '', email: '', password: '' });
   const [busy, setBusy] = useState(false);
@@ -27,6 +27,14 @@ export default function AuthPage({ mode, onDone, offline }) {
         <p className="sec" style={{ textAlign: 'center', margin: '0 0 20px', lineHeight: 1.5 }}>
           {setup ? 'Create the first account. It becomes the admin of this install — there is no default password.' : 'Your self-hosted assistant for tasks, calendar, mail and chats.'}
         </p>
+        {!setup && demo && (
+          <div className="banner info" style={{ marginBottom: 16 }} data-testid="demo-login">
+            <strong>Demo login</strong><br />
+            Email: <span className="mono">{demo.email}</span><br />
+            Password: <span className="mono">{demo.password}</span>
+            <div style={{ marginTop: 8 }}><button type="button" className="btn sm" onClick={() => setF({ ...f, email: demo.email, password: demo.password })}>Fill in for me</button></div>
+          </div>
+        )}
         {setup && (
           <div className="field"><label className="label" htmlFor="name">Your name</label>
             <input id="name" className="input" value={f.name} onChange={set('name')} autoComplete="name" required /></div>

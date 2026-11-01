@@ -6,7 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit');
 const db = require('./db');
-const { SESSION_SECRET, COOKIE_NAME } = require('./config');
+const { SESSION_SECRET, COOKIE_NAME, DEMO_LOGIN_EMAIL, DEMO_LOGIN_PASSWORD } = require('./config');
 
 const router = express.Router();
 const TTL_S = 7 * 24 * 3600;
@@ -46,8 +46,19 @@ function validate({ email, name, password }) {
 
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, standardHeaders: true, legacyHeaders: false, validate: { xForwardedForHeader: false } });
 
+// Demo login (opt-in via env). The account is created — or its password reset to
+// the configured one — at boot, and becomes admin if it is the first account.
+const demo = DEMO_LOGIN_EMAIL && DEMO_LOGIN_PASSWORD ? { email: DEMO_LOGIN_EMAIL, password: DEMO_LOGIN_PASSWORD } : null;
+if (demo) {
+  const hash = bcrypt.hashSync(demo.password, 12);
+  const u = db.prepare('SELECT * FROM users WHERE email = ?').get(demo.email);
+  if (u) db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, u.id);
+  else db.prepare('INSERT INTO users (email, name, password_hash, role) VALUES (?,?,?,?)').run(demo.email, 'Demo', hash, userCount() === 0 ? 'admin' : 'user');
+  console.log(`[open-forge] demo login enabled for ${demo.email}`);
+}
+
 router.get('/status', (req, res) => {
-  res.json({ needsSetup: userCount() === 0, user: publicUser(userFromToken(req.cookies?.[COOKIE_NAME])) });
+  res.json({ needsSetup: userCount() === 0, user: publicUser(userFromToken(req.cookies?.[COOKIE_NAME])), demoLogin: demo });
 });
 
 router.post('/setup', authLimiter, (req, res) => {

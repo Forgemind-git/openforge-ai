@@ -36,7 +36,7 @@ export default function App() {
   useEffect(() => { load(); }, [load]);
 
   if (!boot) return <div className="authwrap"><Loader2 className="spin" /></div>;
-  if (!boot.user) return <AuthPage mode={boot.needsSetup ? 'setup' : 'login'} onDone={load} offline={boot.offline} />;
+  if (!boot.user) return <AuthPage mode={boot.needsSetup ? 'setup' : 'login'} onDone={load} offline={boot.offline} demo={boot.demoLogin} />;
 
   const route = hash.replace(/^#\/?/, '').split('/');
   const page = route[0] === 'settings' ? 'settings' : 'office';

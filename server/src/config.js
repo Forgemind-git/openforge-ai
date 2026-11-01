@@ -32,5 +32,9 @@ module.exports = {
   SESSION_SECRET: env('SESSION_SECRET') || fileSecret('.session_secret'),
   ENCRYPTION_KEY: env('ENCRYPTION_KEY') || fileSecret('.encryption_key'),
   COOKIE_NAME: 'openforge_session',
+  // OFF unless both are set. Seeds this account at boot and SHOWS the email and
+  // password on the sign-in page — only for a public demo install, never production.
+  DEMO_LOGIN_EMAIL: env('DEMO_LOGIN_EMAIL'),
+  DEMO_LOGIN_PASSWORD: env('DEMO_LOGIN_PASSWORD'),
   NODE_ENV: env('NODE_ENV') || 'development',
 };
