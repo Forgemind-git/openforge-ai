@@ -1,0 +1,255 @@
+/* Forge AI logo — animation rules ported from ForgeCommand's styles.css
+   (ForgeMindLogo.jsx relies on these class names). */
+.logo-float-anim { width: 100%; height: 100%; animation: float-bob 4s ease-in-out infinite; }
+@keyframes float-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+.logo-tilt { width: 100%; height: 100%; }
+
+@keyframes blink { 0%,38%,46%,100%{transform:scaleY(1);} 41%,43%{transform:scaleY(0.05);} }
+.blink-wrapper { animation: blink 2.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes blink-think {
+  0%,100% { transform: scaleY(0.62); }
+  20%     { transform: scaleY(0.7); }
+  46%,52% { transform: scaleY(0.06); }
+  70%     { transform: scaleY(0.58); }
+}
+.blink-thinking { animation: blink-think 1.6s ease-in-out infinite; }
+
+.fc-expr { transform-box: fill-box; transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
+.fc-expr-neutral   { transform: none; }
+.fc-expr-happy     { transform-origin: center bottom; transform: scaleY(0.52); }
+.fc-expr-excited   { transform-origin: center center; transform: scale(1.16); animation: fc-expr-bounce 0.62s ease-in-out infinite; }
+@keyframes fc-expr-bounce { 0%,100% { transform: scale(1.16) translateY(0); } 50% { transform: scale(1.22) translateY(-1.6px); } }
+.fc-expr-surprised { transform-origin: center center; transform: scale(1.34); }
+.fc-expr-surprised .blink-wrapper { animation: none; }
+.fc-expr-focused   { transform-origin: center center; transform: scaleY(0.72) scaleX(1.08); }
+
+/* The glow ring behind the floating logo, pulsing while Forge AI is working. */
+.fa-halo { position: absolute; inset: 8%; border-radius: 50%; filter: blur(28px); opacity: .35;
+  background: radial-gradient(circle, var(--c-primary, #dc2626) 0%, transparent 70%); transition: opacity .4s; }
+.fa-halo.on { animation: fa-halo 1.6s ease-in-out infinite; }
+@keyframes fa-halo { 0%,100% { opacity: .35; transform: scale(1); } 50% { opacity: .7; transform: scale(1.12); } }
+
+.fa-dots span { display: inline-block; width: 5px; height: 5px; margin-right: 3px; border-radius: 50%;
+  background: currentColor; animation: fa-dot 1.4s ease-in-out infinite; }
+.fa-dots span:nth-child(2) { animation-delay: .2s; }
+.fa-dots span:nth-child(3) { animation-delay: .4s; }
+@keyframes fa-dot { 0%,60%,100% { transform: translateY(0); opacity: .4; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+.fa-scroll { scrollbar-width: thin; }
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-float-anim, .fa-halo.on, .fc-expr-excited { animation: none; }
+  .fc-expr { transition: none; }
+}
+
+@keyframes fa-spin { to { transform: rotate(360deg); } }
+.fa-root .spin { animation: fa-spin 1s linear infinite; }
+
+/* ── The office ────────────────────────────────────────────────────────────
+   A faint dot grid reads as a floor the stations stand on. */
+.fa-office {
+  background-color: var(--c-pageBg, #F7F7F3);
+  background-image: radial-gradient(var(--c-borderStrong, #D5D5D0) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  border-radius: 16px;
+}
+
+/* ── Scanning a station (ForgeCommand's DashCard scan FX) ─────────────────── */
+.fa-scan-pill {
+  font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: #dc2626; background: rgba(220,38,38,.10); border-radius: 999px; padding: 2px 8px;
+  animation: fa-node-pulse 1.3s ease-in-out infinite;
+}
+.fa-scan-tint { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(120,120,120,.05), transparent 40%, rgba(120,120,120,.05)); }
+.fa-scan-sweep { position: absolute; top: 0; bottom: 0; width: 64px; left: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(150,150,150,.10) 40%, rgba(150,150,150,.22) 50%, rgba(150,150,150,.10) 60%, transparent);
+  animation: fa-scan-sweep 1.9s cubic-bezier(0.45,0,0.55,1) infinite; }
+.fa-bracket { position: absolute; width: 14px; height: 14px; pointer-events: none; border: 0 solid #dc2626;
+  animation: fa-node-pulse 1.3s ease-in-out infinite; }
+.fa-bracket-tl { top: 6px; left: 6px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 4px; }
+.fa-bracket-tr { top: 6px; right: 6px; border-top-width: 2px; border-right-width: 2px; border-top-right-radius: 4px; }
+.fa-bracket-bl { bottom: 6px; left: 6px; border-bottom-width: 2px; border-left-width: 2px; border-bottom-left-radius: 4px; }
+.fa-bracket-br { bottom: 6px; right: 6px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 4px; }
+@keyframes fa-scan-sweep { 0% { left: -64px; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { left: 100%; opacity: 0; } }
+@keyframes fa-node-pulse { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+
+/* ── Rolling step lines (ForgeCommand's processing bar) ───────────────────── */
+.fa-proc-line { display: inline-flex; align-items: center; gap: 7px; background: rgba(26,26,26,.82); color: #f5f5f2;
+  backdrop-filter: blur(10px); padding: 5px 13px; border-radius: 999px; font: 600 12px 'DM Sans', system-ui, sans-serif;
+  animation: fa-proc-in .32s cubic-bezier(.16,1,.3,1); }
+@keyframes fa-proc-in { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.fa-sheet-in { animation: fa-sheet-in .28s cubic-bezier(.16,1,.3,1); }
+@keyframes fa-sheet-in { from { transform: translateY(12px) scale(.97); opacity: 0; } to { transform: none; opacity: 1; } }
+.fa-answer-in { animation: fa-answer-in .32s cubic-bezier(0.34,1.4,0.64,1); }
+@keyframes fa-answer-in { from { transform: translateY(8px) scale(.98); opacity: 0; } to { transform: none; opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-scan-sweep, .fa-bracket, .fa-scan-pill, .fa-proc-line, .fa-sheet-in, .fa-answer-in { animation: none; }
+}
+
+/* Forge AI's pointer: flies from the bot to what it opens, then taps it. */
+.fa-pointer { position: absolute; left: 0; top: 0; z-index: 70; pointer-events: none; opacity: 0; transition: opacity .2s ease; will-change: transform; }
+.fa-pointer-arrow { position: relative; display: block; transform-origin: 4px 3px; transform: rotate(-4deg);
+  filter: drop-shadow(0 4px 8px rgba(153,27,27,.45)) drop-shadow(0 0 10px rgba(220,38,38,.35)); transition: transform .16s cubic-bezier(.3,1.6,.5,1); }
+.fa-pointer.tap .fa-pointer-arrow { transform: rotate(-4deg) scale(.78) translate(1px, 1px); }
+.fa-pointer-tag { position: absolute; left: 20px; top: 24px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  background: linear-gradient(135deg, #ef4444, #b91c1c); color: #fff; font: 700 10px/1 'DM Sans', system-ui, sans-serif; letter-spacing: .02em;
+  padding: 4px 7px 4px 5px; border-radius: 7px; box-shadow: 0 4px 10px rgba(153,27,27,.35); }
+.fa-pointer-ring { position: absolute; left: -13px; top: -13px; width: 32px; height: 32px; border-radius: 50%; border: 2px solid #dc2626; opacity: 0; }
+.fa-pointer.tap .fa-pointer-ring { animation: fa-tap-ring .55s ease-out; }
+.fa-pointer.tap .fa-pointer-ring2 { animation: fa-tap-ring .55s ease-out .12s; }
+@keyframes fa-tap-ring { 0% { transform: scale(.3); opacity: .9; } 100% { transform: scale(1.7); opacity: 0; } }
+.fa-tapped { box-shadow: 0 0 0 2px #dc2626, 0 0 18px rgba(220,38,38,.35) !important; transition: box-shadow .15s ease; }
+
+/* Live voice: the pulsing dot beside "Listening". */
+.fa-live-dot { animation: fa-live 1.2s ease-in-out infinite; }
+@keyframes fa-live { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(.75); } }
+@media (prefers-reduced-motion: reduce) { .fa-live-dot { animation: none; } }
+
+/* ── Forge AI's answer text (AnswerText.jsx) ─────────────────────────────────
+   Nothing here changes width while words appear, so lines never re-wrap. */
+.fa-answer-text { font-size: 15px; line-height: 1.55; color: var(--c-t2, #222); overflow-wrap: anywhere; }
+.fa-answer-text .fa-p { margin: 0 0 2px; }
+.fa-answer-text .fa-h { font-weight: 700; color: var(--c-text, #111); margin: 6px 0 2px; }
+.fa-answer-text .fa-gap { height: 6px; }
+.fa-answer-text .fa-li { display: flex; gap: 8px; margin: 2px 0; }
+.fa-answer-text .fa-li-mark { color: #dc2626; font-weight: 700; min-width: 14px; }
+.fa-answer-text .fa-key { font-weight: 700; color: var(--c-text, #111); background: rgba(220,38,38,.10); border-radius: 5px; padding: 0 4px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.fa-answer-text .fa-metric { font-weight: 700; color: #b91c1c; background: rgba(220,38,38,.08); border-radius: 5px; padding: 0 4px; white-space: nowrap; }
+:root[data-theme="dark"] .fa-answer-text .fa-metric { color: #fca5a5; background: rgba(248,113,113,.14); }
+:root[data-theme="dark"] .fa-answer-text .fa-key { background: rgba(248,113,113,.14); }
+
+/* ── A chat message Forge AI is pointing at (PersonSheet) ────────────────── */
+.fa-hl { box-shadow: 0 0 0 2px var(--fa-hl, #dc2626); transition: box-shadow .3s ease, transform .3s ease; }
+.fa-hl-active { box-shadow: 0 0 0 2.5px var(--fa-hl, #dc2626), 0 0 0 7px color-mix(in srgb, var(--fa-hl, #dc2626) 22%, transparent); transform: scale(1.015); animation: fa-hl-pulse 1.6s ease-in-out infinite; }
+@keyframes fa-hl-pulse { 50% { box-shadow: 0 0 0 2.5px var(--fa-hl, #dc2626), 0 0 0 11px color-mix(in srgb, var(--fa-hl, #dc2626) 10%, transparent); } }
+.fa-hl-note { margin-top: 6px; max-width: 100%; display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; line-height: 1.4; border-radius: 9px; padding: 6px 9px; color: var(--c-t2, #222); background: var(--c-cardBg, #fff); box-shadow: 0 0 0 1.5px var(--fa-hl, #dc2626); }
+.fa-hl-tag { flex-shrink: 0; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #fff; background: var(--fa-hl, #dc2626); border-radius: 5px; padding: 1px 6px; margin-top: 1px; }
+@media (prefers-reduced-motion: reduce) { .fa-hl-active { animation: none; transform: none; } }
+
+/* ── live search (Find leads / Audience) ── */
+.fa-caret { display: inline-block; width: 2px; height: 1.1em; background: #dc2626; margin-left: 1px; vertical-align: -2px; animation: fa-live 1s steps(2) infinite; }
+.fa-chip-in { animation: fa-chip-in .32s cubic-bezier(.34,1.5,.64,1) both; }
+@keyframes fa-chip-in { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
+.fa-row-in { animation: fa-row-in .34s ease-out both; }
+@keyframes fa-row-in { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+.fa-search-bar { position: relative; overflow: hidden; }
+.fa-search-bar.busy::after { content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 40%; background: #dc2626; animation: fa-search-run 1s ease-in-out infinite; }
+@keyframes fa-search-run { from { left: -40%; } to { left: 100%; } }
+
+/* ── chat analysis micro windows ── */
+.fa-mw { position: relative; overflow: hidden; }
+.fa-mw.running { box-shadow: 0 6px 18px rgba(0,0,0,.10); }
+/* station header: Forge AI read this card in the current answer */
+.fa-used-dot { width: 7px; height: 7px; border-radius: 50%; background: #dc2626; flex-shrink: 0; }
+.fa-mw.running .fa-scan-sweep { animation: fa-scan-sweep 1.5s linear infinite; }
+.fa-mw-skel { height: 7px; border-radius: 4px; background: var(--c-surfaceMuted, #eee); }
+.fa-mw.running .fa-mw-skel { animation: fa-node-pulse 1.1s ease-in-out infinite; }
+.fa-mw.running .fa-mw-skel:nth-child(2) { animation-delay: .15s; }
+.fa-mw.running .fa-mw-skel:nth-child(3) { animation-delay: .3s; }
+.fa-mw-done { animation: fa-answer-in .34s cubic-bezier(0.34,1.4,0.64,1); }
+
+/* ── visual KPI card ── */
+.fa-vis-bar { transform-origin: bottom; animation: fa-vis-grow .7s cubic-bezier(.16,1,.3,1) both; }
+@keyframes fa-vis-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.fa-vis-line { stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: fa-vis-draw 1.1s ease-out forwards; }
+@keyframes fa-vis-draw { to { stroke-dashoffset: 0; } }
+.fa-vis-area { opacity: 0; animation: fa-vis-fade .8s ease-out .4s forwards; }
+@keyframes fa-vis-fade { to { opacity: 1; } }
+.fa-vis-arc { animation: fa-vis-fade .5s ease-out both; }
+
+/* ── "running now" dot (campaigns, ads) ── */
+.fa-live-ping { animation: fa-ping 1.8s cubic-bezier(0,0,.2,1) infinite; }
+@keyframes fa-ping { 0% { transform: scale(1); opacity: .55; } 80%,100% { transform: scale(2.4); opacity: 0; } }
+
+/* ── motion mode: a sheet leaving fades and sinks instead of vanishing ── */
+.fa-sheet-out { animation: fa-sheet-out .2s cubic-bezier(.4,0,1,1) forwards; }
+@keyframes fa-sheet-out { to { transform: translateY(10px) scale(.97); opacity: 0; } }
+.fa-backdrop-out { animation: fa-fade-out .2s ease forwards; }
+@keyframes fa-fade-out { to { opacity: 0; } }
+.fa-backdrop-in { animation: fa-fade-in .22s ease both; }
+@keyframes fa-fade-in { from { opacity: 0; } }
+.fa-motion-off .fa-sheet-in, .fa-motion-off .fa-backdrop-in { animation: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-live-ping, .fa-sheet-out, .fa-backdrop-out, .fa-backdrop-in { animation: none; }
+}
+
+/* ── a row / tile Forge AI is pointing at on a card (open_view highlight) ── */
+.fa-row-hl { box-shadow: 0 0 0 2px rgba(220,38,38,.55) !important; background-color: rgba(220,38,38,.06) !important; border-radius: 10px; transition: box-shadow .3s ease, background-color .3s ease; }
+.fa-row-hl-on { box-shadow: 0 0 0 2.5px #dc2626, 0 0 0 7px rgba(220,38,38,.18) !important; animation: fa-row-hl-pulse 1.6s ease-in-out infinite; }
+@keyframes fa-row-hl-pulse { 50% { box-shadow: 0 0 0 2.5px #dc2626, 0 0 0 11px rgba(220,38,38,.08); } }
+:root[data-theme="dark"] .fa-row-hl { background-color: rgba(248,113,113,.10) !important; }
+@media (prefers-reduced-motion: reduce) { .fa-row-hl-on { animation: none; } }
+
+/* workbench: a caret while text types itself in, and a soft loading shimmer */
+.fa-caret { display: inline-block; margin-left: 1px; color: #dc2626; animation: fa-caret 1s steps(1) infinite; }
+@keyframes fa-caret { 50% { opacity: 0; } }
+.fa-shimmer { position: relative; overflow: hidden; }
+.fa-shimmer::after { content: ''; position: absolute; top: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation: fa-search-run 1.2s linear infinite; width: 40%; }
+/* social: the useful-comment spotlight drifts sideways */
+.fa-spot-track { display: flex; gap: 10px; transition: transform .7s cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) { .fa-caret, .fa-shimmer::after { animation: none; } .fa-spot-track { transition: none; } }
+/* station cards: an "Open" chip slides in on hover / keyboard focus */
+.fa-station .fa-open-chip { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: #dc2626; background: rgba(220,38,38,.09); border-radius: 999px; padding: 2px 8px 2px 6px; opacity: 0; transform: translateX(6px); transition: opacity .2s ease, transform .2s ease; flex-shrink: 0; }
+.fa-station:hover .fa-open-chip, .fa-station:focus-visible .fa-open-chip { opacity: 1; transform: none; }
+.fa-station:hover { transform: translateY(-1px); }
+.fa-mini-row { border-radius: 8px; margin: 0 -4px; padding: 3px 4px; transition: background .15s ease; }
+.fa-mini-row:hover { background: var(--c-surfaceMuted, #f4f4f2); }
+.fa-mini-row .fa-mini-open { opacity: 0; transition: opacity .15s ease; }
+.fa-mini-row:hover .fa-mini-open { opacity: 1; }
+@media (hover: none) { .fa-station .fa-open-chip { opacity: 1; transform: none; } .fa-mini-row .fa-mini-open { opacity: 1; } }
+/* scripted morning brief (pages/assistant/BriefPlayer.jsx) */
+@keyframes fb-in { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fb-pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes fb-bar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { [data-testid="brief-player"] * { animation-duration: .01ms !important; animation-delay: 0ms !important; } }
+
+/* ── Morning brief stage (BriefTour.jsx) ───────────────────────────────────── */
+.fb-caret { display: inline-block; margin-left: 1px; color: #dc2626; animation: fa-caret .8s step-end infinite; }
+.fb-scanning::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 70px; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(220,38,38,.18), transparent); animation: fa-scan-sweep .9s cubic-bezier(.45,0,.55,1) infinite; }
+.fb-sun { width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; box-shadow: 0 0 0 0 rgba(245,158,11,.5); animation: fb-sun 1.4s ease-out infinite; flex-shrink: 0; }
+@keyframes fb-sun { 0% { box-shadow: 0 0 0 0 rgba(245,158,11,.55); } 100% { box-shadow: 0 0 0 12px rgba(245,158,11,0); } }
+@media (prefers-reduced-motion: reduce) { .fb-caret, .fb-scanning::after, .fb-sun { animation: none; } }
+/* the number being said right now, in the brief's pop-up */
+.fb-now { box-shadow: 0 0 0 2px #dc2626, 0 0 0 7px rgba(220,38,38,.12); animation: fb-now-pulse 1.4s ease-in-out infinite; }
+@keyframes fb-now-pulse { 50% { box-shadow: 0 0 0 2px #dc2626, 0 0 0 11px rgba(220,38,38,.05); } }
+@media (prefers-reduced-motion: reduce) { .fb-now { animation: none; } }
+
+/* Forge AI reading, highlighting and writing (AssistantPage gestures).
+   Overlays only — drawn above the card, never on its elements. */
+.fa-pointer-label { display: inline-block; min-width: 0; }
+.fa-pointer[data-mode="read"] .fa-pointer-tag,
+.fa-pointer[data-mode="highlight"] .fa-pointer-tag,
+.fa-pointer[data-mode="write"] .fa-pointer-tag { animation: fa-tag-swap .25s cubic-bezier(.34,1.5,.64,1); }
+.fa-pointer[data-mode="highlight"] .fa-pointer-tag { background: linear-gradient(135deg, #f59e0b, #b45309); box-shadow: 0 4px 10px rgba(180,83,9,.35); }
+.fa-pointer[data-mode="write"] .fa-pointer-arrow { animation: fa-writing .42s ease-in-out infinite; }
+@keyframes fa-tag-swap { from { transform: scale(.7); opacity: .4; } to { transform: none; opacity: 1; } }
+@keyframes fa-writing { 0%,100% { transform: rotate(-4deg) translate(0,0); } 50% { transform: rotate(-9deg) translate(1px,2px); } }
+
+/* READ: a red scan line runs down the card, a soft band trailing it. */
+.fa-mark-beam { overflow: hidden; border-radius: 12px; }
+.fa-mark-beam::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 70px; transform: translateY(-80px);
+  background: linear-gradient(180deg, rgba(220,38,38,0), rgba(220,38,38,.07) 70%, rgba(220,38,38,.16));
+  animation: fa-beam 1.7s cubic-bezier(.45,.05,.55,.95) forwards; }
+.fa-mark-beam::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; transform: translateY(-10px);
+  background: linear-gradient(90deg, rgba(220,38,38,0), #dc2626 18%, #dc2626 82%, rgba(220,38,38,0)); box-shadow: 0 0 10px rgba(220,38,38,.6);
+  animation: fa-beam-line 1.7s cubic-bezier(.45,.05,.55,.95) forwards; }
+@keyframes fa-beam { 0% { top: 0; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+@keyframes fa-beam-line { 0% { top: 0; opacity: 0; } 12% { opacity: 1; } 88% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+/* HIGHLIGHT: a highlighter stroke drawn left to right, then fading. */
+.fa-mark-marker { border-radius: 6px; background: rgba(250,204,21,.38); mix-blend-mode: multiply; transform-origin: left center;
+  animation: fa-marker-draw .62s cubic-bezier(.45,.05,.4,1) both, fa-marker-fade .6s ease 2.6s forwards; }
+:root[data-theme="dark"] .fa-mark-marker { mix-blend-mode: screen; background: rgba(250,204,21,.22); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fa-mark-marker { mix-blend-mode: screen; background: rgba(250,204,21,.22); } }
+@keyframes fa-marker-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes fa-marker-fade { to { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fa-mark-beam, .fa-mark-marker { display: none; }
+  .fa-pointer[data-mode="write"] .fa-pointer-arrow { animation: none; }
+}

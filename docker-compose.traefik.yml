@@ -1,0 +1,30 @@
+# Open Forge behind an existing Traefik (HTTPS via Let's Encrypt).
+#   docker compose -f docker-compose.traefik.yml up -d --build
+# Needs in .env: OPENFORGE_HOST, TRAEFIK_NETWORK, TRAEFIK_CERTRESOLVER (and PUBLIC_URL=https://$OPENFORGE_HOST).
+services:
+  openforge:
+    build: .
+    image: open-forge:latest
+    container_name: openforge
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - openforge-data:/data
+    networks: [traefik]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK}
+      - traefik.http.routers.openforge.rule=Host(`${OPENFORGE_HOST}`)
+      - traefik.http.routers.openforge.entrypoints=web,websecure
+      - traefik.http.routers.openforge.tls=true
+      - traefik.http.routers.openforge.tls.certresolver=${TRAEFIK_CERTRESOLVER}
+      - traefik.http.routers.openforge.service=openforge
+      - traefik.http.services.openforge.loadbalancer.server.port=3000
+
+networks:
+  traefik:
+    name: ${TRAEFIK_NETWORK}
+    external: true
+
+volumes:
+  openforge-data:
