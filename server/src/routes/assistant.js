@@ -28,7 +28,12 @@ router.post('/assistant/chat', async (req, res) => {
   const text = String(req.body?.message || '').trim().slice(0, 8000);
   if (!text) return res.status(400).json({ error: 'Type a message.' });
   const model = store.get(req.user.id, 'model');
-  if (!model.secret.apiKey || !model.config.provider) return res.status(400).json({ error: 'Add your OpenAI or Anthropic key in Settings → Model first.' });
+  if (!model.secret.apiKey || !model.config.provider) {
+    // A fresh install's normal state, not a failure: answer in-stream.
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache, no-transform', 'X-Accel-Buffering': 'no' });
+    res.write(`event: error\ndata: ${JSON.stringify({ error: 'Add your OpenAI or Anthropic key in Settings → Model first.' })}\n\nevent: done\ndata: {}\n\n`);
+    return res.end();
+  }
 
   let convId = Number(req.body?.conversationId) || null;
   if (convId && !db.prepare('SELECT 1 FROM conversations WHERE id = ? AND user_id = ?').get(convId, req.user.id)) convId = null;
