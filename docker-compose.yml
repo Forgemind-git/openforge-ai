@@ -1,4 +1,4 @@
-# OpenForge AI — run it anywhere:  cp .env.example .env && docker compose up -d
+# OpenForge AI — run it anywhere:  ./deploy.sh   (or: cp .env.example .env && docker compose up -d --build)
 # Then open http://localhost:3000 (or your PUBLIC_URL) and create the admin account.
 services:
   openforge:
@@ -6,6 +6,7 @@ services:
     image: openforge-ai:latest
     container_name: openforge
     restart: unless-stopped
+    init: true             # forwards Ctrl-C / docker stop to Node, so it shuts down cleanly
     env_file: .env
     ports:
       - "${OPENFORGE_PORT:-3000}:3000"
