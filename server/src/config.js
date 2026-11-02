@@ -1,4 +1,4 @@
-// Runtime configuration. Open Forge AI ships with NO credentials: the two server
+// Runtime configuration. OpenForge AI ships with NO credentials: the two server
 // secrets (session signing + at-rest encryption) come from the environment, or
 // are generated on first boot into the data volume. Every third-party key
 // (OpenAI / Anthropic / Gemini / Google / WhatsApp / Telegram) is entered by each
@@ -38,6 +38,6 @@ module.exports = {
   DEMO_LOGIN_PASSWORD: env('DEMO_LOGIN_PASSWORD'),
   // The GitHub repo the top bar's star button points at ("owner/name"); set to
   // "none" to hide it. Its star count is fetched by the server and cached.
-  GITHUB_REPO: env('OPENFORGE_GITHUB_REPO') || 'Forgemind-git/open-forge',
+  GITHUB_REPO: env('OPENFORGE_GITHUB_REPO') || 'Forgemind-git/openforge-ai',
   NODE_ENV: env('NODE_ENV') || 'development',
 };

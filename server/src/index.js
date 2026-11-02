@@ -1,4 +1,4 @@
-// Open Forge AI — API server + the built web app, one process.
+// OpenForge AI — API server + the built web app, one process.
 const path = require('path');
 const fs = require('fs');
 const http = require('http');
@@ -74,4 +74,4 @@ app.use((err, req, res, next) => {
 
 const server = http.createServer(app);
 live.attach(server);
-server.listen(PORT, () => console.log(`[open-forge-ai] listening on :${PORT}`));
+server.listen(PORT, () => console.log(`[openforge-ai] listening on :${PORT}`));

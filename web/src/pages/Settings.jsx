@@ -138,7 +138,7 @@ function WhatsAppSection({ v, setView }) {
   const [st, run, Msg] = useSave(setView);
   return (
     <>
-      <p className="lead">The <strong>WhatsApp Cloud API</strong> (Meta). Incoming messages reach Open Forge AI through a webhook; you reply from the Chats card. A free-text reply is only allowed within 24 hours of the person's last message — that's Meta's rule.</p>
+      <p className="lead">The <strong>WhatsApp Cloud API</strong> (Meta). Incoming messages reach OpenForge AI through a webhook; you reply from the Chats card. A free-text reply is only allowed within 24 hours of the person's last message — that's Meta's rule.</p>
       <ol className="steps-list">
         <li>At <a href="https://developers.facebook.com/apps" target="_blank" rel="noreferrer">developers.facebook.com</a> create a Business app and add the <strong>WhatsApp</strong> product.</li>
         <li>From WhatsApp → API Setup copy the <strong>Phone number ID</strong>. For a token that doesn't expire, create a <strong>System User</strong> token in Business Settings with <code>whatsapp_business_messaging</code>.</li>
@@ -177,7 +177,7 @@ function TelegramSection({ v, setView }) {
   const [st, run, Msg] = useSave(setView);
   return (
     <>
-      <p className="lead">A <strong>Telegram bot</strong> as a chat channel. Open Forge AI registers its webhook for you — messages to the bot appear on the Chats card and you reply from there.</p>
+      <p className="lead">A <strong>Telegram bot</strong> as a chat channel. OpenForge AI registers its webhook for you — messages to the bot appear on the Chats card and you reply from there.</p>
       <ol className="steps-list">
         <li>In Telegram, message <a href="https://t.me/BotFather" target="_blank" rel="noreferrer">@BotFather</a> → <code>/newbot</code> and copy the token.</li>
         <li>Paste it here and press Save. To read group messages, also turn off privacy mode with <code>/setprivacy</code>.</li>

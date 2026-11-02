@@ -2,26 +2,9 @@
    (ForgeMindLogo.jsx relies on these class names). */
 .logo-float-anim { width: 100%; height: 100%; animation: float-bob 4s ease-in-out infinite; }
 @keyframes float-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
-.logo-tilt { width: 100%; height: 100%; }
 
 @keyframes blink { 0%,38%,46%,100%{transform:scaleY(1);} 41%,43%{transform:scaleY(0.05);} }
 .blink-wrapper { animation: blink 2.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
-@keyframes blink-think {
-  0%,100% { transform: scaleY(0.62); }
-  20%     { transform: scaleY(0.7); }
-  46%,52% { transform: scaleY(0.06); }
-  70%     { transform: scaleY(0.58); }
-}
-.blink-thinking { animation: blink-think 1.6s ease-in-out infinite; }
-
-.fc-expr { transform-box: fill-box; transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1); }
-.fc-expr-neutral   { transform: none; }
-.fc-expr-happy     { transform-origin: center bottom; transform: scaleY(0.52); }
-.fc-expr-excited   { transform-origin: center center; transform: scale(1.16); animation: fc-expr-bounce 0.62s ease-in-out infinite; }
-@keyframes fc-expr-bounce { 0%,100% { transform: scale(1.16) translateY(0); } 50% { transform: scale(1.22) translateY(-1.6px); } }
-.fc-expr-surprised { transform-origin: center center; transform: scale(1.34); }
-.fc-expr-surprised .blink-wrapper { animation: none; }
-.fc-expr-focused   { transform-origin: center center; transform: scaleY(0.72) scaleX(1.08); }
 
 /* The glow ring behind the floating logo, pulsing while Forge AI is working. */
 .fa-halo { position: absolute; inset: 8%; border-radius: 50%; filter: blur(28px); opacity: .35;
@@ -38,8 +21,7 @@
 .fa-scroll { scrollbar-width: thin; }
 
 @media (prefers-reduced-motion: reduce) {
-  .logo-float-anim, .fa-halo.on, .fc-expr-excited { animation: none; }
-  .fc-expr { transition: none; }
+  .logo-float-anim, .fa-halo.on, .blink-wrapper { animation: none; }
 }
 
 @keyframes fa-spin { to { transform: rotate(360deg); } }

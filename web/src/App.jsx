@@ -27,7 +27,7 @@ export function Brand({ size = 30 }) {
   return (
     <span className="brand">
       <img src="/forgemind-logo.svg" alt="" width={size} height={size} />
-      <span className="brand-name">Open Forge</span><span className="tag">AI</span>
+      <span className="brand-name">OpenForge</span><span className="tag">AI</span>
     </span>
   );
 }
@@ -72,7 +72,7 @@ export default function App() {
   return (
     <ApiContext.Provider value={ctx}>
       <header className="topbar">
-        <a href="#/" className="brand-link" aria-label="Open Forge AI home"><Brand /></a>
+        <a href="#/" className="brand-link" aria-label="OpenForge AI home"><Brand /></a>
         <nav className="navpills" aria-label="Main">
           <a href="#/" className={page === 'office' ? 'on' : ''}>Assistant</a>
           <a href="#/settings" className={page === 'settings' ? 'on' : ''}>Settings</a>
@@ -82,7 +82,7 @@ export default function App() {
             <FlaskConical size={15} /><span>Demo</span><span className="knob" />
           </button>
           {meta?.url && (
-            <a className="gh-star" href={meta.url} target="_blank" rel="noreferrer" title={meta.stars != null ? `Star Open Forge AI on GitHub — ${meta.stars} ${meta.stars === 1 ? 'star' : 'stars'}${meta.starsCheckedAt ? `, checked ${new Date(meta.starsCheckedAt).toLocaleString()}` : ''}` : 'Star Open Forge AI on GitHub'} data-testid="gh-star">
+            <a className="gh-star" href={meta.url} target="_blank" rel="noreferrer" title={meta.stars != null ? `Star OpenForge AI on GitHub — ${meta.stars} ${meta.stars === 1 ? 'star' : 'stars'}${meta.starsCheckedAt ? `, checked ${new Date(meta.starsCheckedAt).toLocaleString()}` : ''}` : 'Star OpenForge AI on GitHub'} data-testid="gh-star">
               <Github size={15} /><span className="gh-label">Star</span>
               {meta.stars != null && <span className="gh-count" data-testid="gh-count"><Star size={12} />{meta.stars >= 1000 ? `${(meta.stars / 1000).toFixed(1)}k` : meta.stars}</span>}
             </a>

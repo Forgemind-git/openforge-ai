@@ -16,7 +16,7 @@ export function Sheet({ sheet, setSheet, data, errs, status, reload, decide }) {
   });
   const notGoogle = ['tasks', 'calendar', 'mail'].includes(view) && errs[view] === 'google';
   return (
-    <Modal title={TITLES[view] || 'Open Forge AI'} onClose={close} wide>
+    <Modal title={TITLES[view] || 'OpenForge AI'} onClose={close} wide>
       <div className="sheet-body" data-testid={`sheet-${view}`}>
         {notGoogle ? <div className="empty">Google isn't connected. <a href="#/settings/google" onClick={close}>Connect it in Settings</a>.</div>
           : view === 'tasks' ? <TasksSheet tasks={data.tasks || []} reload={() => reload(['tasks'])} />

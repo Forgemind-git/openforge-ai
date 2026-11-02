@@ -1,10 +1,10 @@
-# Open Forge AI behind an existing Traefik (HTTPS via Let's Encrypt).
+# OpenForge AI behind an existing Traefik (HTTPS via Let's Encrypt).
 #   docker compose -f docker-compose.traefik.yml up -d --build
 # Needs in .env: OPENFORGE_HOST, TRAEFIK_NETWORK, TRAEFIK_CERTRESOLVER (and PUBLIC_URL=https://$OPENFORGE_HOST).
 services:
   openforge:
     build: .
-    image: open-forge:latest
+    image: openforge-ai:latest
     container_name: openforge
     restart: unless-stopped
     env_file: .env

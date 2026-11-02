@@ -17,7 +17,7 @@ const page = (title, text, ok) => `<!doctype html><meta charset="utf-8"><meta na
 <title>${title}</title><body style="font-family:system-ui,sans-serif;background:#f1f1f0;display:grid;place-items:center;min-height:100vh;margin:0">
 <div style="background:#fff;border-radius:16px;padding:28px 32px;max-width:420px;box-shadow:0 8px 24px rgba(0,0,0,.06)">
 <h2 style="margin:0 0 8px;color:${ok ? '#16a34a' : '#dc2626'}">${title}</h2><p style="color:#4d4d55;line-height:1.5">${text}</p>
-<a href="/#/settings" style="color:#dc2626;font-weight:700">Back to Open Forge AI</a></div>
+<a href="/#/settings" style="color:#dc2626;font-weight:700">Back to OpenForge AI</a></div>
 <script>try{window.opener&&window.opener.postMessage({type:'openforge:google',ok:${ok ? 'true' : 'false'}},location.origin);setTimeout(()=>window.close(),${ok ? 900 : 4000})}catch(e){}</script>`;
 const esc = (v) => String(v || '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

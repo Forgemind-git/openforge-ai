@@ -96,7 +96,6 @@ export default function Office({ user }) {
   const [proc, setProc] = useState([]);               // [{ id, label, status }]
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [typing, setTyping] = useState(false);
   const abortRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -133,7 +132,7 @@ export default function Office({ user }) {
     if (!q) return;
     if (live === 'live' && liveRef.current) { liveRef.current.sendText(q); setInput(''); setLastQ(q); return; }
     if (busy) return;
-    setInput(''); setTyping(false); setBusy(true); setLastQ(q); setAnswer(null); setUsed([]); setProc([]);
+    setInput(''); setBusy(true); setLastQ(q); setAnswer(null); setUsed([]); setProc([]);
     const ctrl = new AbortController(); abortRef.current = ctrl;
     try {
       await (demo ? demoChat : streamChat)({
@@ -315,8 +314,7 @@ export default function Office({ user }) {
         <div className="bot" data-testid="assistant-logo">
           <div className={`fa-halo ${busy || speaking || live === 'live' ? 'on' : ''}`} />
           <div className="logo-float-anim" style={{ position: 'relative' }}>
-            <ForgeMindLogo thinking={busy} lookAtRef={typing ? inputRef : null}
-              expression={busy ? 'focused' : speaking ? 'happy' : answer?.error ? 'surprised' : answer ? 'happy' : 'neutral'} />
+            <ForgeMindLogo />
           </div>
         </div>
         <div className="centre-body" data-testid="chatlog">
@@ -346,7 +344,7 @@ export default function Office({ user }) {
         )}
         <input ref={inputRef} value={input} aria-label="Message Forge" data-testid="assistant-input"
           placeholder={live === 'live' ? 'Talk, or type here…' : 'Ask Forge AI, or tell it what to prepare…'}
-          onChange={(e) => { setInput(e.target.value); setTyping(!!e.target.value); }} onBlur={() => setTyping(false)} />
+          onChange={(e) => setInput(e.target.value)} />
         <button type="button" className={`talkbtn ${live ? 'on' : ''}`} onClick={toggleTalk} data-testid="talk-btn" title={live ? 'End live voice' : 'Talk to Forge AI'}>
           {live === 'connecting' ? <Loader2 size={16} className="spin" /> : live ? <><PhoneOff size={16} />End</> : <><Mic size={16} />Talk</>}
         </button>

@@ -1,5 +1,5 @@
 // Demo mode — sample data that lives only in this browser tab. It stands in for
-// the API so every card, sheet and the chat show what Open Forge AI looks like once
+// the API so every card, sheet and the chat show what OpenForge AI looks like once
 // Google, WhatsApp and Telegram are connected. Nothing here reaches the server.
 import { ymd, addDays } from './util';
 
@@ -35,7 +35,7 @@ function seed() {
       { id: 'm2', from: 'Ravi Kumar <ravi@studio.example>', subject: 'Lunch tomorrow?', snippet: 'Still on for 1pm? I booked Cafe Arabica.', date: minsAgo(90), unread: true, body: 'Still on for 1pm tomorrow? I booked Cafe Arabica.\n\n— Ravi' },
       { id: 'm3', from: 'Stripe <receipts@stripe.example>', subject: 'Your receipt from Cloud Hosting', snippet: 'Amount paid ₹4,200.00 · Card ending 4242', date: minsAgo(300), unread: false, body: 'Amount paid ₹4,200.00\nCard ending 4242\n\nThank you for your business.' },
       { id: 'm4', from: 'Anita Rao <anita@agency.example>', subject: 'Webinar speaker confirmed', snippet: 'Great news — our speaker confirmed for the 10th. Sending the bio…', date: minsAgo(60 * 20), unread: false, body: 'Great news — our speaker confirmed for the 10th. Sending the bio and photo later today.\n\nAnita' },
-      { id: 'm5', from: 'GitHub <noreply@github.example>', subject: '[open-forge] New pull request', snippet: 'A new pull request was opened: Improve calendar week view', date: minsAgo(60 * 30), unread: false, body: 'A new pull request was opened: Improve calendar week view.' },
+      { id: 'm5', from: 'GitHub <noreply@github.example>', subject: '[openforge-ai] New pull request', snippet: 'A new pull request was opened: Improve calendar week view', date: minsAgo(60 * 30), unread: false, body: 'A new pull request was opened: Improve calendar week view.' },
       { id: 'm6', from: 'Priya S <priya@clinic.example>', subject: 'Appointment confirmed', snippet: 'Your appointment is confirmed for the 5th at 10:00.', date: minsAgo(60 * 50), unread: false, body: 'Your appointment is confirmed for the 5th at 10:00.' },
     ].map(m => ({ ...m, threadId: m.id, to: 'you@example.com' })),
     chats: [

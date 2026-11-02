@@ -1,9 +1,9 @@
-# Open Forge AI — run it anywhere:  cp .env.example .env && docker compose up -d
+# OpenForge AI — run it anywhere:  cp .env.example .env && docker compose up -d
 # Then open http://localhost:3000 (or your PUBLIC_URL) and create the admin account.
 services:
   openforge:
     build: .
-    image: open-forge:latest
+    image: openforge-ai:latest
     container_name: openforge
     restart: unless-stopped
     env_file: .env

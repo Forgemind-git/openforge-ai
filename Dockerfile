@@ -1,4 +1,4 @@
-# Open Forge AI — one image: the Express API + the built React app.
+# OpenForge AI — one image: the Express API + the built React app.
 
 # 1) Build the web app
 FROM node:20-alpine AS web

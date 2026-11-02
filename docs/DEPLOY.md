@@ -1,6 +1,6 @@
-# Deploying Open Forge AI
+# Deploying OpenForge AI
 
-This guide takes you from an empty server to a working install, then covers upgrades, backups and the problems people usually hit. Open Forge AI is **one container** (Node.js API + the built web app) with its data in **one volume** (SQLite + generated secrets). It holds no credentials until users add their own in Settings.
+This guide takes you from an empty server to a working install, then covers upgrades, backups and the problems people usually hit. OpenForge AI is **one container** (Node.js API + the built web app) with its data in **one volume** (SQLite + generated secrets). It holds no credentials until users add their own in Settings.
 
 - [1. What you need](#1-what-you-need)
 - [2. Fastest path: a fresh VPS with Caddy](#2-fastest-path-a-fresh-vps-with-caddy)
@@ -37,8 +37,8 @@ Caddy gets and renews the HTTPS certificate on its own.
 curl -fsSL https://get.docker.com | sh
 
 # 2. The app
-git clone https://github.com/Forgemind-git/open-forge.git /opt/open-forge
-cd /opt/open-forge
+git clone https://github.com/Forgemind-git/openforge-ai.git /opt/openforge-ai
+cd /opt/openforge-ai
 cp .env.example .env
 sed -i 's|^PUBLIC_URL=.*|PUBLIC_URL=https://assistant.example.com|' .env
 sed -i 's|^OPENFORGE_PORT=.*|OPENFORGE_PORT=127.0.0.1:3000|' .env   # only reachable through Caddy
@@ -123,24 +123,24 @@ server {
 Node.js 20+ and a C/C++ toolchain (for `better-sqlite3`, usually prebuilt):
 
 ```bash
-git clone https://github.com/Forgemind-git/open-forge.git && cd open-forge
+git clone https://github.com/Forgemind-git/openforge-ai.git && cd openforge-ai
 (cd web && npm ci && npm run build) && rm -rf server/public && cp -r web/dist server/public
 cd server && npm ci --omit=dev
-PUBLIC_URL=https://assistant.example.com DATA_DIR=/var/lib/open-forge NODE_ENV=production node src/index.js
+PUBLIC_URL=https://assistant.example.com DATA_DIR=/var/lib/openforge-ai NODE_ENV=production node src/index.js
 ```
 
-A systemd unit (`/etc/systemd/system/open-forge.service`):
+A systemd unit (`/etc/systemd/system/openforge-ai.service`):
 
 ```ini
 [Unit]
-Description=Open Forge AI
+Description=OpenForge AI
 After=network.target
 
 [Service]
-WorkingDirectory=/opt/open-forge/server
+WorkingDirectory=/opt/openforge-ai/server
 Environment=NODE_ENV=production
 Environment=PORT=3000
-Environment=DATA_DIR=/var/lib/open-forge
+Environment=DATA_DIR=/var/lib/openforge-ai
 Environment=PUBLIC_URL=https://assistant.example.com
 ExecStart=/usr/bin/node src/index.js
 Restart=always
@@ -166,7 +166,7 @@ Then put Caddy or nginx in front as above.
 ## 7. Upgrading
 
 ```bash
-cd /opt/open-forge
+cd /opt/openforge-ai
 git pull
 docker compose up -d --build            # or: docker compose -p openforge -f docker-compose.traefik.yml up -d --build
 ```
@@ -177,7 +177,7 @@ The database schema is created and extended automatically at boot; there are no 
 
 Everything lives in the data volume: `openforge.db` (+ `-wal`/`-shm`) and the generated `.session_secret` / `.encryption_key`. **Back up the whole volume** — a database without its `.encryption_key` cannot decrypt the saved keys.
 
-Find the volume name: `docker volume ls | grep openforge` (e.g. `open-forge_openforge-data` or `openforge_openforge-data`).
+Find the volume name: `docker volume ls | grep openforge` (e.g. `openforge-ai_openforge-data` or `openforge_openforge-data`).
 
 **Online backup** (consistent SQLite copy, no downtime):
 
@@ -192,7 +192,7 @@ docker cp openforge:/data/.session_secret ./openforge-session-secret
 
 ```bash
 docker compose stop
-docker run --rm -v open-forge_openforge-data:/data -v "$PWD":/backup alpine tar czf /backup/openforge-data-$(date +%F).tgz -C /data .
+docker run --rm -v openforge-ai_openforge-data:/data -v "$PWD":/backup alpine tar czf /backup/openforge-data-$(date +%F).tgz -C /data .
 docker compose start
 ```
 
@@ -201,7 +201,7 @@ docker compose start
 ## 9. Monitoring
 
 - `GET /health` → `{"ok":true}` — the container's own health check uses it.
-- `docker logs -f openforge` — startup line `[open-forge-ai] listening on :3000`, plus errors from integrations.
+- `docker logs -f openforge` — startup line `[openforge-ai] listening on :3000`, plus errors from integrations.
 - In the app, **Settings** shows each integration's status and the last webhook received for WhatsApp and Telegram.
 
 ## 10. Running a public demo

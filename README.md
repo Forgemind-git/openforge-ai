@@ -1,12 +1,12 @@
-# Open Forge AI
+# OpenForge AI
 
 <p align="center"><img src="web/public/forgemind-logo.svg" width="72" alt="Forgemind AI logo"></p>
 
 A self-hosted, open-source AI assistant for your **tasks, calendar, mail and chats** — in one office-style screen. Built by [Forgemind AI](https://forgemind.in/) · [@forgemind_ai](https://www.instagram.com/forgemind_ai/) on Instagram.
 
-![Open Forge AI — the office (light)](docs/screenshots/office-light.png)
+![OpenForge AI — the office (light)](docs/screenshots/office-light.png)
 
-Open Forge AI puts your Google Tasks, Google Calendar, Gmail and a unified WhatsApp + Telegram inbox around an assistant called **Forge**. Ask it anything ("what's on my plate today?", "which chats are waiting on me?", "draft a reply to Arjun") by typing, or press **Talk** and speak to it in real time.
+OpenForge AI puts your Google Tasks, Google Calendar, Gmail and a unified WhatsApp + Telegram inbox around an assistant called **Forge**. Ask it anything ("what's on my plate today?", "which chats are waiting on me?", "draft a reply to Arjun") by typing, or press **Talk** and speak to it in real time.
 
 **Forge never sends anything on its own.** When it wants to send a message, an email, add an event or create a task, it prepares a **draft** on the *Drafts to approve* card. Nothing leaves until you press **Send / Confirm** (you can edit the draft first).
 
@@ -70,8 +70,8 @@ Keys are entered on the **Settings** page and stored **encrypted** (AES-256-GCM)
 You need **Docker** (with Compose v2). Everything else runs in one container.
 
 ```bash
-git clone https://github.com/Forgemind-git/open-forge.git
-cd open-forge
+git clone https://github.com/Forgemind-git/openforge-ai.git
+cd openforge-ai
 cp .env.example .env          # set PUBLIC_URL to the address you will open
 docker compose up -d --build
 ```
@@ -90,7 +90,7 @@ Open `http://localhost:3000` (or your `PUBLIC_URL`), **create the admin account*
 | `OPENFORGE_PORT` | `3000` | Host port published by `docker-compose.yml`. |
 | `SESSION_SECRET` | generated | Signs login cookies. Blank = random, stored in the data volume. |
 | `ENCRYPTION_KEY` | generated | Encrypts every saved key (AES-256-GCM). Blank = random, stored in the data volume. **Changing it later makes saved keys unreadable.** |
-| `OPENFORGE_GITHUB_REPO` | `Forgemind-git/open-forge` | Repo for the GitHub star button in the top bar; `none` hides it. The star count is checked hourly and stored in the database. |
+| `OPENFORGE_GITHUB_REPO` | `Forgemind-git/openforge-ai` | Repo for the GitHub star button in the top bar; `none` hides it. The star count is checked hourly and stored in the database. |
 | `DEMO_LOGIN_EMAIL`, `DEMO_LOGIN_PASSWORD` | off | For a public demo only: seeds that account at boot and **shows** its email and password on the sign-in page. Leave blank for real use. |
 | `OPENFORGE_HOST`, `TRAEFIK_NETWORK`, `TRAEFIK_CERTRESOLVER` | — | Only for `docker-compose.traefik.yml`. |
 
@@ -121,11 +121,11 @@ Each user uses **their own** Google Cloud OAuth client:
 3. Settings → **WhatsApp**: paste the phone number ID and token; optionally a verify token of your choice and the app secret (App settings → Basic) so every webhook's signature is checked. Press **Save & test**.
 4. Copy the **Callback URL** and **Verify token** shown, paste them into WhatsApp → **Configuration → Webhook**, press *Verify and save*, then **subscribe to `messages`**.
 
-Messages people send to your number now appear in **Chats**. WhatsApp only allows a free-text reply within **24 hours** of the person's last message; outside that window Meta requires an approved template (not covered by Open Forge AI).
+Messages people send to your number now appear in **Chats**. WhatsApp only allows a free-text reply within **24 hours** of the person's last message; outside that window Meta requires an approved template (not covered by OpenForge AI).
 
 ### 5. Telegram — bot
 1. Message [@BotFather](https://t.me/BotFather), send `/newbot`, copy the token.
-2. Settings → **Telegram**: paste it and press **Save & register webhook**. Open Forge AI calls `setWebhook` for you (with a secret token so only Telegram can post to it).
+2. Settings → **Telegram**: paste it and press **Save & register webhook**. OpenForge AI calls `setWebhook` for you (with a secret token so only Telegram can post to it).
 3. For group chats, disable privacy mode with `/setprivacy` in BotFather.
 
 ## How the "never sends on its own" rule is enforced
@@ -134,7 +134,7 @@ The assistant's tool list (`server/src/assistant/tools.js`) contains only **read
 ## How it works
 
 ```
-Browser (React)  ──HTTPS──>  Open Forge AI server (Node/Express, one container)
+Browser (React)  ──HTTPS──>  OpenForge AI server (Node/Express, one container)
    │  cards, chat, settings         │  SQLite in /data (users, encrypted keys, chats, drafts, conversations)
    │                                ├── OpenAI / Anthropic  (chat + tool calling, your key)
    └── Talk: WebSocket ───────────> ├── Gemini Live          (voice, your key — the server proxies it)

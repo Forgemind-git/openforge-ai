@@ -22,7 +22,7 @@ const REFRESH_MS = 3600e3;
 const fetchedAt = new Map();
 
 async function refresh(repo) {
-  const r = await fetch(`https://api.github.com/repos/${repo}`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'open-forge-ai' }, signal: AbortSignal.timeout(6000) });
+  const r = await fetch(`https://api.github.com/repos/${repo}`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'openforge-ai' }, signal: AbortSignal.timeout(6000) });
   if (!r.ok) return; // private, missing or rate-limited: keep the stored count
   const n = (await r.json()).stargazers_count;
   if (!Number.isInteger(n)) return;

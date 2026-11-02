@@ -8,7 +8,7 @@ export default function AuthPage({ mode, onDone, offline, demo, links }) {
   const setup = mode === 'setup';
   const [f, setF] = useState({ name: '', email: '', password: '' });
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState(offline ? 'The server is not answering. Check that Open Forge AI is running.' : '');
+  const [err, setErr] = useState(offline ? 'The server is not answering. Check that OpenForge AI is running.' : '');
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   async function submit(e) {
@@ -23,7 +23,7 @@ export default function AuthPage({ mode, onDone, offline, demo, links }) {
       <form className="card authcard fa-sheet-in" onSubmit={submit} data-testid={setup ? 'setup-form' : 'login-form'}>
         <div style={{ width: 88, height: 88, margin: '0 auto 6px' }}><ForgeMindLogo /></div>
         <h1 style={{ textAlign: 'center', margin: '0 0 4px', fontSize: 24, fontWeight: 800, letterSpacing: '-.02em' }}>
-          {setup ? 'Welcome to Open Forge AI' : 'Sign in to Open Forge AI'}
+          {setup ? 'Welcome to OpenForge AI' : 'Sign in to OpenForge AI'}
         </h1>
         <p className="sec" style={{ textAlign: 'center', margin: '0 0 20px', lineHeight: 1.5 }}>
           {setup ? 'Create the first account. It becomes the admin of this install — there is no default password.' : 'Your self-hosted assistant for tasks, calendar, mail and chats.'}

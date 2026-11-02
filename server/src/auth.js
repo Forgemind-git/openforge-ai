@@ -54,7 +54,7 @@ if (demo) {
   const u = db.prepare('SELECT * FROM users WHERE email = ?').get(demo.email);
   if (u) db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hash, u.id);
   else db.prepare('INSERT INTO users (email, name, password_hash, role) VALUES (?,?,?,?)').run(demo.email, 'Demo', hash, userCount() === 0 ? 'admin' : 'user');
-  console.log(`[open-forge-ai] demo login enabled for ${demo.email}`);
+  console.log(`[openforge-ai] demo login enabled for ${demo.email}`);
 }
 
 router.get('/status', (req, res) => {
@@ -62,7 +62,7 @@ router.get('/status', (req, res) => {
 });
 
 router.post('/setup', authLimiter, (req, res) => {
-  if (userCount() > 0) return res.status(409).json({ error: 'Open Forge AI is already set up. Sign in instead.' });
+  if (userCount() > 0) return res.status(409).json({ error: 'OpenForge AI is already set up. Sign in instead.' });
   const err = validate(req.body || {});
   if (err) return res.status(400).json({ error: err });
   const { email, name, password } = req.body;
@@ -74,7 +74,7 @@ router.post('/setup', authLimiter, (req, res) => {
     return db.prepare('SELECT * FROM users WHERE id = ?').get(r.lastInsertRowid);
   });
   const user = create();
-  if (!user) return res.status(409).json({ error: 'Open Forge AI is already set up. Sign in instead.' });
+  if (!user) return res.status(409).json({ error: 'OpenForge AI is already set up. Sign in instead.' });
   issue(res, req, user);
   res.status(201).json({ user: publicUser(user) });
 });

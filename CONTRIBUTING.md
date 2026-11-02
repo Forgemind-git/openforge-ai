@@ -1,4 +1,4 @@
-# Contributing to Open Forge AI
+# Contributing to OpenForge AI
 
 Thanks for helping! A few ground rules keep the project safe to self-host.
 
