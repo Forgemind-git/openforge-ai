@@ -6,6 +6,8 @@ A self-hosted, open-source AI assistant for your **tasks, calendar, mail and cha
 
 ![OpenForge AI — the office (light)](docs/screenshots/office-light.png)
 
+> **This is a base variant — a kick-starter, not a finished product.** OpenForge AI gives you a working, self-hosted assistant with a small, readable codebase. Upgrade it to your needs: add the **tools** and **integrations** you want (your CRM, shop, bookings, notes, internal APIs…), change its rules and personality, and build your own Jarvis-style assistant for your business or for yourself. **→ [docs/EXTEND.md](docs/EXTEND.md)** shows where everything lives and how to add a tool step by step.
+
 OpenForge AI puts your Google Tasks, Google Calendar, Gmail and a unified WhatsApp + Telegram inbox around an assistant called **Forge**. Ask it anything ("what's on my plate today?", "which chats are waiting on me?", "draft a reply to Arjun") by typing, or press **Talk** and speak to it in real time.
 
 **Forge never sends anything on its own.** When it wants to send a message, an email, add an event or create a task, it prepares a **draft** on the *Drafts to approve* card. Nothing leaves until you press **Send / Confirm** (you can edit the draft first).
@@ -67,14 +69,27 @@ Keys are entered on the **Settings** page and stored **encrypted** (AES-256-GCM)
 
 ## Quick start
 
-You need **Docker** (with Compose v2). Everything else runs in one container.
+You need **Docker** with Compose v2 (Docker Desktop on Mac/Windows, or Docker Engine on Linux). Everything runs in one container — no database server, no Node install.
 
 ```bash
 git clone https://github.com/Forgemind-git/openforge-ai.git
 cd openforge-ai
+./deploy.sh
+```
+
+`deploy.sh` checks Docker, creates `.env` from `.env.example` on the first run, builds the image, starts the container and waits until it is healthy. Other commands: `./deploy.sh update` (pull the latest code and rebuild — your data is kept), `./deploy.sh logs`, `./deploy.sh stop`. On the first run you can set the address and port inline:
+
+```bash
+PUBLIC_URL=https://assistant.example.com OPENFORGE_PORT=8080 ./deploy.sh
+```
+
+<details><summary>Without the script (plain Docker Compose, also for Windows PowerShell)</summary>
+
+```bash
 cp .env.example .env          # set PUBLIC_URL to the address you will open
 docker compose up -d --build
 ```
+</details>
 
 Open `http://localhost:3000` (or your `PUBLIC_URL`), **create the admin account**, then add your keys in **Settings**. Until you connect something, the app opens in **demo mode** so you can look around.
 
@@ -160,6 +175,8 @@ server/src/
   integrations/         llm.js (OpenAI/Anthropic), google.js, messaging.js (WhatsApp + Telegram)
   routes/               settings, assistant, data (cards), public (OAuth return + webhooks)
 server/test/            node:test — the "never sends on its own" guarantees
+deploy.sh               one-command Docker deploy / update
+docs/                   DEPLOY.md (servers, proxies, backups) · EXTEND.md (make it yours)
 web/src/
   pages/Office.jsx      the office: rails, Forge, answer, composer, Talk
   pages/Sheets.jsx      cards opened full size (tasks board, calendar, mail, chats, drafts)
@@ -175,6 +192,8 @@ cd server && npm install && npm start      # API on :3000 (data in server/data)
 cd web && npm install && npm run dev       # UI on :5173, proxies /api to :3000
 cd server && npm test
 ```
+
+Adding tools, actions or integrations: **[docs/EXTEND.md](docs/EXTEND.md)**.
 
 Stack: Node 20 + Express + better-sqlite3 + ws · React 18 + Vite · lucide icons · Plus Jakarta Sans. No SDKs — OpenAI, Anthropic, Google, Meta and Telegram are called over plain HTTPS.
 

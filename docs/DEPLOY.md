@@ -165,6 +165,14 @@ Then put Caddy or nginx in front as above.
 
 ## 7. Upgrading
 
+With the plain `docker-compose.yml` install, one command pulls, rebuilds and waits until it is healthy:
+
+```bash
+cd /opt/openforge-ai && ./deploy.sh update
+```
+
+Or by hand:
+
 ```bash
 cd /opt/openforge-ai
 git pull
