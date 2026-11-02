@@ -40,6 +40,8 @@ Switch **Demo** on in the top bar to see every card filled with sample tasks, ev
 | **Mail** — Gmail inbox, reader and reply | **Chats** — WhatsApp + Telegram in one inbox |
 | ![Drafts](docs/screenshots/drafts.png) | ![Settings](docs/screenshots/settings-google.png) |
 | **Drafts to approve** | **Settings** — your own keys, step by step |
+| ![Morning brief](docs/screenshots/morning-brief.png) | |
+| **Morning brief** — Forge AI reads each card out | |
 
 ---|---|---|
 | OpenAI **or** Anthropic API key | the chat model + tool calling | platform.openai.com · console.anthropic.com |
@@ -59,6 +61,11 @@ Keys are entered on the **Settings** page and stored **encrypted** (AES-256-GCM)
 - **Demo mode** — sample data in every card so you can see it working before connecting anything.
 - **Chat with tools** — Forge reads your real data through tools (overview of the day, tasks, events, mail search/read, chats) and opens the relevant card on screen.
 - **Talk** — live, interruptible voice with Gemini Live, using the same tools. Transcripts are saved to your conversation history.
+- **Morning brief** — press the sunrise button (or the *Morning brief* chip) and Forge AI flies from card to card — Calendar, Tasks, Mail, Chats, Drafts — reading out what each one shows, with the key numbers lighting up beside it as they are said, then ends with a plan for the day. Two modes:
+  - **Demo morning brief** (Demo on): the demo data, read by your browser's built-in voice. Free, no keys, nothing leaves the page.
+  - **Morning brief** (Demo off): your own data, read in the **Gemini Live** voice (your Gemini key, Settings → Voice). Without a Gemini key it uses the browser voice.
+
+  The script is built from what the cards show (no model call, about a minute). It only reads — it never sends or changes anything.
 - **Tasks** — a kanban (Overdue / Today / Upcoming / Done) over all your Google Tasks lists. Drag to re-date, tick to complete, add new.
 - **Calendar** — a week view of your primary Google Calendar; add events.
 - **Mail** — Gmail inbox with search, a reader and reply.

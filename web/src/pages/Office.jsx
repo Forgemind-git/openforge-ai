@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays, Mail, ListTodo, MessagesSquare, FileCheck2, History, Send, Mic, PhoneOff, Loader2, ArrowUpRight,
-  Check, X, Plus, Settings2, Trash2, Clock, ShieldCheck, AlertTriangle, CheckCircle2, Sparkles, FlaskConical,
+  Check, X, Plus, Settings2, Trash2, Clock, ShieldCheck, AlertTriangle, CheckCircle2, Sparkles, FlaskConical, Sunrise,
 } from 'lucide-react';
 import { streamChat } from '../api';
 import { useApi } from '../lib/apiContext';
@@ -14,6 +14,8 @@ import { Avatar, Answer, Modal } from '../components/ui.jsx';
 import { createGeminiLive, isGeminiLiveSupported } from '../lib/geminiLive';
 import { ago, timeOf, todayYmd, ymd, addDays, senderName } from '../lib/util';
 import { Sheet, draftIcon } from './Sheets.jsx';
+import MorningBrief from '../components/MorningBrief.jsx';
+import { buildBrief } from '../lib/brief';
 
 const PANELS = ['tasks', 'calendar', 'mail', 'chats', 'drafts'];
 const SUGGESTIONS = ['What is on my plate today?', 'Which chats are waiting for a reply?', 'Summarise my unread mail', 'Plan my week'];
@@ -103,8 +105,11 @@ export default function Office({ user }) {
   const liveRef = useRef(null);
   const turnRef = useRef({ user: '', bot: '' });
 
+  const [brief, setBrief] = useState(null);            // { steps, live, n } while the morning brief runs
+  const [briefFocus, setBriefFocus] = useState(null);  // the card the brief is on
+
   // Switching demo on/off starts clean.
-  useEffect(() => { setAnswer(null); setLastQ(''); setConvId(null); setSheet(null); setUsed([]); setProc([]); }, [demo]);
+  useEffect(() => { setAnswer(null); setLastQ(''); setConvId(null); setSheet(null); setUsed([]); setProc([]); setBrief(null); }, [demo]);
   useEffect(() => {
     if (demo) return undefined;
     const es = new EventSource('/api/events');
@@ -150,6 +155,14 @@ export default function Office({ user }) {
       setTimeout(() => setProc([]), 1800);
     }
   }
+
+  // Morning brief: demo data in the browser voice, or your own data in the Gemini Live voice.
+  function startBrief() {
+    if (liveRef.current) { liveRef.current.stop(); liveRef.current = null; setLive(null); setSpeaking(false); }
+    setSheet(null); setHistoryOpen(false);
+    setBrief({ steps: buildBrief({ name: user.name, d, errs, status }), live: !demo && !!status?.voice, n: Date.now() });
+  }
+  const stopBrief = useCallback(() => { setBrief(null); setBriefFocus(null); }, []);
 
   function newChat() { setConvId(null); setAnswer(null); setLastQ(''); setUsed([]); setProc([]); }
   async function openConversation(id) {
@@ -279,7 +292,7 @@ export default function Office({ user }) {
   const rail = (side, ids) => (
     <div className={`rail rail-${side} fa-scroll`} data-testid={`rail-${side}`}>
       <div className="rail-in">
-        {ids.map(id => <Station key={id} id={id} count={counts[id]} used={used.includes(id)} scanning={scan.includes(id)} onOpen={() => open(id)}>{bodies[id]}</Station>)}
+        {ids.map(id => <Station key={id} id={id} count={counts[id]} used={used.includes(id)} scanning={scan.includes(id) || briefFocus === id} onOpen={() => open(id)}>{bodies[id]}</Station>)}
       </div>
     </div>
   );
@@ -290,9 +303,10 @@ export default function Office({ user }) {
   );
 
   return (
-    <main className={`fa-office office2 ${idle ? 'idle' : 'answering'}`} data-testid="office">
+    <main className={`fa-office office2 ${idle ? 'idle' : 'answering'} ${brief ? 'briefing' : ''}`} data-testid="office">
       <div className="toolbar">
         {(answer || convId) && <RoundBtn title="New conversation" testid="new-chat" onClick={newChat}><Plus size={16} /></RoundBtn>}
+        <RoundBtn title="Morning brief" testid="brief-btn" onClick={startBrief}><Sunrise size={16} /></RoundBtn>
         <RoundBtn title="Conversations" testid="open-history" onClick={() => setHistoryOpen(true)}><History size={16} /></RoundBtn>
         <a className="roundbtn" href="#/settings" title="Settings" aria-label="Settings"><Settings2 size={16} /></a>
       </div>
@@ -321,7 +335,7 @@ export default function Office({ user }) {
               <div className="tagline"><ShieldCheck size={14} color="#16a34a" />I read your tasks, calendar, mail and chats. I only prepare drafts — nothing is sent until you press Send.</div>
               {demo && <div className="banner info demo-banner" data-testid="demo-banner"><FlaskConical size={14} style={{ verticalAlign: -2, marginRight: 4 }} /><strong>Demo mode</strong> — sample data so you can see how it works. Turn <strong>Demo</strong> off in the top bar to use your own accounts.</div>}
               {!demo && setupMissing && <div className="banner warn" data-testid="setup-banner"><AlertTriangle size={14} style={{ verticalAlign: -2, marginRight: 4 }} />Add your model key in <a href="#/settings/model">Settings → Model</a> (OpenAI or Anthropic), then connect Google, WhatsApp or Telegram.</div>}
-              <div className="suggest">{SUGGESTIONS.map((s, i) => <button key={s} className={i === 0 ? 'first' : ''} onClick={() => ask(s)}>{i === 0 && <Sparkles size={13} />}{s}</button>)}</div>
+              <div className="suggest"><button className="brief-chip" data-testid="brief-chip" onClick={startBrief}><Sunrise size={13} />{demo ? 'Demo morning brief' : 'Morning brief'}</button>{SUGGESTIONS.map((s, i) => <button key={s} className={i === 0 ? 'first' : ''} onClick={() => ask(s)}>{i === 0 && <Sparkles size={13} />}{s}</button>)}</div>
             </>
           )}
           {lastQ && <div className="asked" data-testid="asked">“{lastQ}”</div>}
@@ -352,6 +366,7 @@ export default function Office({ user }) {
         )}
       </form>
 
+      {brief && <MorningBrief key={brief.n} steps={brief.steps} live={brief.live} demo={demo} onFocus={setBriefFocus} onClose={stopBrief} onReplay={startBrief} />}
       {sheet && <Sheet key={String(demo)} sheet={sheet} setSheet={setSheet} data={d} errs={errs} status={status} reload={load} decide={decide} />}
       {historyOpen && <HistoryModal api={api} convId={convId} onOpen={openConversation} onClose={() => setHistoryOpen(false)} onNew={() => { newChat(); setHistoryOpen(false); }} />}
     </main>

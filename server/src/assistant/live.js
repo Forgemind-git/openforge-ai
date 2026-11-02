@@ -14,6 +14,7 @@ const store = require('../store');
 const { userFromToken } = require('../auth');
 const { COOKIE_NAME } = require('../config');
 const { TOOLS, TOOL_BY_NAME, TOOL_LABELS, systemPrompt } = require('./tools');
+const { narratorInstruction } = require('./narrate');
 
 const PATH = '/api/assistant/live';
 const GEMINI_WS = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
@@ -75,11 +76,14 @@ function attach(server) {
     const user = userFromToken(m && decodeURIComponent(m[1]));
     if (!user) return refuse(401, 'Unauthorized');
     const tz = url.searchParams.get('tz') || 'UTC';
-    wss.handleUpgrade(req, socket, head, (ws) => bridge(ws, user, tz));
+    // mode 'narrate': the morning brief reads its script (no tools, no mic, no History).
+    const mode = url.searchParams.get('mode') === 'narrate' ? 'narrate' : null;
+    wss.handleUpgrade(req, socket, head, (ws) => bridge(ws, user, tz, mode));
   });
 }
 
-function bridge(client, user, tz) {
+function bridge(client, user, tz, mode = null) {
+  const narrate = mode === 'narrate';
   const send = (o) => { if (client.readyState === WebSocket.OPEN) client.send(JSON.stringify(o)); };
   const v = store.get(user.id, 'voice');
   if (!v.secret.apiKey) { send({ type: 'error', error: 'Add your Gemini API key in Settings → Voice to use Talk.' }); client.close(); return; }
@@ -88,6 +92,7 @@ function bridge(client, user, tz) {
   // Transcript → a normal conversation, so voice sessions show in History.
   const hist = { id: null, user: '', bot: '', steps: [] };
   const flush = (role) => {
+    if (narrate) { hist.user = ''; hist.bot = ''; return; }   // a read-out brief is not a conversation
     const k = role === 'user' ? 'user' : 'bot';
     const text = hist[k].replace(/\s+/g, ' ').trim(); hist[k] = '';
     const steps = role === 'assistant' ? hist.steps.splice(0) : [];
@@ -116,8 +121,9 @@ function bridge(client, user, tz) {
       setup: {
         model: `models/${conf.model}`,
         generationConfig: { responseModalities: ['AUDIO'], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: conf.voice } } } },
-        systemInstruction: { parts: [{ text: instruction(user, conf, tz) }] },
-        tools: [{ functionDeclarations: declarations() }],
+        ...(narrate
+          ? { systemInstruction: { parts: [{ text: narratorInstruction(conf) }] } }
+          : { systemInstruction: { parts: [{ text: instruction(user, conf, tz) }] }, tools: [{ functionDeclarations: declarations() }] }),
         inputAudioTranscription: {}, outputAudioTranscription: {},
       },
     }));
@@ -147,6 +153,7 @@ function bridge(client, user, tz) {
     try {
       if (m.setupComplete) {
         send({ type: 'ready', model: conf.model, voice: conf.voice });
+        if (narrate) return;   // the page sends the script itself
         upstream.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: GREETING_CUE }] }], turnComplete: true } }));
         return;
       }
@@ -180,13 +187,14 @@ function bridge(client, user, tz) {
   client.on('message', (data, isBinary) => {
     if (upstream.readyState !== WebSocket.OPEN) return;
     if (isBinary) {
+      if (narrate) return;   // no microphone in a read-out
       upstream.send(JSON.stringify({ realtimeInput: { audio: { mimeType: 'audio/pcm;rate=16000', data: Buffer.from(data).toString('base64') } } }));
       return;
     }
     let m; try { m = JSON.parse(data.toString()); } catch { return; }
     if (m.type === 'text' && m.text) {
-      hist.user += String(m.text);
-      upstream.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: String(m.text).slice(0, 4000) }] }], turnComplete: true } }));
+      if (!narrate) hist.user += String(m.text);
+      upstream.send(JSON.stringify({ clientContent: { turns: [{ role: 'user', parts: [{ text: String(m.text).slice(0, narrate ? 3000 : 4000) }] }], turnComplete: true } }));
     }
   });
   client.on('close', shut);

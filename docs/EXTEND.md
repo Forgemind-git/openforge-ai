@@ -20,6 +20,8 @@ Out of the box it does Google Tasks, Calendar and Gmail, WhatsApp + Telegram cha
 | Add a card / screen | `web/src/pages/Office.jsx` (the rails) and `web/src/pages/Sheets.jsx` (the full-size panels) |
 | Change colours, fonts, logo | `web/src/theme.css`, `web/public/` (logo, favicon, `forge-ai-blink.gif`) |
 | Change the demo data | `web/src/lib/demo.js` |
+| Change what the morning brief says, or add a card to its tour | `web/src/lib/brief.js` (the script — one step per card); the tour itself is `web/src/components/MorningBrief.jsx` |
+| Change the morning brief's live voice delivery | `server/src/assistant/narrate.js` |
 
 ## 1. Add a read tool
 

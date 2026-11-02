@@ -1,0 +1,59 @@
+/* The morning brief: the travelling Forge AI logo and the panel beside it.
+   Borderless like the rest of the office: separation by fill and shadow only. */
+.mb-logo {
+  position: fixed; left: 0; top: 0; z-index: 46; pointer-events: none;
+  transition: transform .8s cubic-bezier(.2,.8,.2,1), width .5s ease, height .5s ease;
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.18));
+}
+.mb-logo img { width: 100%; height: 100%; display: block; }
+
+.mb-hud {
+  position: fixed; left: 0; top: 0; z-index: 47;
+  background: var(--fc-card); color: var(--fc-text); border-radius: 16px; box-shadow: var(--fc-shadow-lg);
+  padding: 10px 12px 10px; display: flex; flex-direction: column; gap: 8px;
+  transition: transform .8s cubic-bezier(.2,.8,.2,1), width .5s ease;
+  animation: mb-in .4s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes mb-in { from { opacity: 0; } to { opacity: 1; } }
+
+.mb-head { display: flex; align-items: center; gap: 7px; }
+.mb-dot { width: 7px; height: 7px; border-radius: 4px; background: var(--fc-primary); flex-shrink: 0; animation: mb-pulse 1.4s ease-in-out infinite; }
+.mb-dot.off { animation: none; background: var(--fc-green); }
+@keyframes mb-pulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+.mb-label { font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.mb-count { font-size: 11.5px; color: var(--fc-text-muted); font-variant-numeric: tabular-nums; }
+.mb-x { border: 0; background: transparent; color: var(--fc-text-muted); cursor: pointer; padding: 3px; border-radius: 8px; display: inline-flex; }
+.mb-x:hover { background: var(--fc-surface); color: var(--fc-text); }
+
+.mb-wait { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--fc-text-secondary); }
+
+.mb-tiles { display: flex; flex-direction: column; gap: 5px; }
+.mb-tile { display: flex; align-items: center; gap: 10px; border-radius: 12px; padding: 7px 9px;
+  opacity: .35; transform: scale(.98); transition: opacity .35s ease, transform .35s ease, background .35s ease, box-shadow .35s ease; }
+.mb-tile.on { opacity: 1; transform: none; background: var(--fc-surface); }
+.mb-tile.now { box-shadow: 0 0 0 2px var(--fc-primary-soft); }
+.mb-val { font-size: 22px; font-weight: 800; min-width: 34px; font-variant-numeric: tabular-nums; color: var(--fc-text); }
+.mb-tile.on .mb-val.red { color: var(--fc-primary); }
+.mb-tile.on .mb-val.amber { color: var(--fc-amber); }
+.mb-tile.on .mb-val.green { color: var(--fc-green); }
+.mb-tick { width: 22px; height: 22px; border-radius: 11px; background: var(--fc-green-soft); color: var(--fc-green); display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.mb-txt { min-width: 0; display: flex; flex-direction: column; }
+.mb-txt b { font-size: 13px; font-weight: 700; line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-txt span { font-size: 12px; color: var(--fc-text-muted); line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.mb-caption { font-size: 12.5px; line-height: 1.45; color: var(--fc-text-secondary); }
+.mb-end { display: flex; flex-direction: column; gap: 8px; font-size: 13px; font-weight: 600; }
+.mb-voice { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 11.5px; color: var(--fc-text-muted); }
+.mb-voice a { margin-left: auto; color: var(--fc-primary); font-weight: 600; }
+
+/* While the brief runs, the centre logo has flown off and the centre text steps back. */
+.office2.briefing .bot { opacity: 0; }
+.office2.briefing .centre-body { opacity: .18; pointer-events: none; transition: opacity .3s; }
+
+/* The morning brief chip next to the suggestions. */
+.suggest .brief-chip { display: inline-flex; align-items: center; gap: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .mb-logo, .mb-hud { transition: none; }
+  .mb-dot { animation: none; }
+}
