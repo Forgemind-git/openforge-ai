@@ -6,6 +6,11 @@
 @keyframes blink { 0%,38%,46%,100%{transform:scaleY(1);} 41%,43%{transform:scaleY(0.05);} }
 .blink-wrapper { animation: blink 2.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 
+/* Forge AI in the assistant's centre: a floating, blinking GIF. The logo fills
+   80% of the GIF's width, so the image is drawn at 125% of the box and shifted
+   to keep the logo the size of the box. */
+.bot-gif { position: absolute; width: 125%; height: auto; left: -12.5%; top: -18.75%; max-width: none; pointer-events: none; user-select: none; }
+
 /* The glow ring behind the floating logo, pulsing while Forge AI is working. */
 .fa-halo { position: absolute; inset: 8%; border-radius: 50%; filter: blur(28px); opacity: .35;
   background: radial-gradient(circle, var(--c-primary, #dc2626) 0%, transparent 70%); transition: opacity .4s; }

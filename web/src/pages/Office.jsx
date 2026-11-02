@@ -10,7 +10,6 @@ import {
 import { streamChat } from '../api';
 import { useApi } from '../lib/apiContext';
 import { demoChat } from '../lib/demo';
-import ForgeMindLogo from '../components/ForgeMindLogo.jsx';
 import { Avatar, Answer, Modal } from '../components/ui.jsx';
 import { createGeminiLive, isGeminiLiveSupported } from '../lib/geminiLive';
 import { ago, timeOf, todayYmd, ymd, addDays, senderName } from '../lib/util';
@@ -313,9 +312,7 @@ export default function Office({ user }) {
       <section className="centre">
         <div className="bot" data-testid="assistant-logo">
           <div className={`fa-halo ${busy || speaking || live === 'live' ? 'on' : ''}`} />
-          <div className="logo-float-anim" style={{ position: 'relative' }}>
-            <ForgeMindLogo />
-          </div>
+          <img className="bot-gif" src="/forge-ai-floating.gif" alt="Forge AI" />
         </div>
         <div className="centre-body" data-testid="chatlog">
           {idle && (
