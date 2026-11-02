@@ -310,9 +310,9 @@ export default function Office({ user }) {
       {rail('right', RIGHT)}
 
       <section className="centre">
-        <div className="bot" data-testid="assistant-logo">
+        <div className={`bot ${sheet ? 'away' : ''}`} data-testid="assistant-logo">
           <div className={`fa-halo ${busy || speaking || live === 'live' ? 'on' : ''}`} />
-          <img className="bot-gif" src="/forge-ai-floating.gif" alt="Forge AI" />
+          <div className="logo-float-anim"><img className="bot-gif" src="/forge-ai-blink.gif" alt="Forge AI" /></div>
         </div>
         <div className="centre-body" data-testid="chatlog">
           {idle && (

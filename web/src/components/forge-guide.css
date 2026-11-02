@@ -1,0 +1,39 @@
+/* Forge AI beside an open panel. The panel (.sheet) is centred, min(1100px, 100%)
+   wide inside a 20px scrim gutter, so its left edge is 50% - min(550px, 50% - 20px).
+   The guide sits in the space to the left of that edge, near the panel's top. */
+.forge-guide {
+  position: fixed; z-index: 51; pointer-events: none;
+  width: 136px; left: calc(50% - 550px - 152px);
+  top: calc(50% - min(360px, 50vh - 20px) + 12px);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  animation: forge-guide-in .45s cubic-bezier(.16,1,.3,1) both;
+}
+.forge-guide-logo { width: 96px; height: 96px; }
+.forge-guide-logo img { width: 100%; height: 100%; display: block; }
+.forge-guide-bubble {
+  position: relative; background: var(--fc-card); color: var(--fc-text-secondary);
+  border-radius: 16px; padding: 10px 12px; box-shadow: var(--fc-shadow-lg);
+  font-size: 12.5px; line-height: 1.45; text-align: left;
+}
+.forge-guide-bubble strong { display: block; color: var(--fc-text); font-size: 12px; font-weight: 800; margin-bottom: 2px; }
+/* the bubble's pointer, up towards the logo */
+.forge-guide-bubble::before {
+  content: ''; position: absolute; top: -6px; left: 50%; width: 12px; height: 12px;
+  background: var(--fc-card); transform: translateX(-50%) rotate(45deg); border-radius: 2px;
+}
+/* Arrives from the centre of the office, where it was standing. */
+@keyframes forge-guide-in { from { opacity: 0; transform: translateX(120px) scale(.85); } to { opacity: 1; transform: none; } }
+
+/* Not enough room beside the panel for the note: just the logo, smaller. */
+@media (max-width: 1419px) {
+  .forge-guide { width: 56px; left: calc(50% - 550px - 64px); }
+  .forge-guide-logo { width: 52px; height: 52px; }
+  .forge-guide-bubble { display: none; }
+}
+/* No room at all beside the panel. */
+@media (max-width: 1239px) { .forge-guide { display: none; } }
+
+/* While a panel is open Forge AI is beside it, not in the centre. */
+.bot.away { opacity: 0; transition: opacity .2s; }
+
+@media (prefers-reduced-motion: reduce) { .forge-guide { animation: none; } }

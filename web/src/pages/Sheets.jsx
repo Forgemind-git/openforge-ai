@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, Check, X, ChevronLeft, ChevronRight, Send, MessageSquare, Mail, CalendarPlus, ListPlus, ListChecks, Search, Trash2, ExternalLink, Reply } from 'lucide-react';
 import { useApi } from '../lib/apiContext';
 import { Modal, Avatar } from '../components/ui.jsx';
+import ForgeAiGuide from '../components/ForgeAiGuide.jsx';
 import { ago, timeOf, todayYmd, ymd, addDays, dayLabel, senderName } from '../lib/util';
 
 const TITLES = { tasks: 'Tasks', calendar: 'Calendar', mail: 'Mail', chats: 'Chats', drafts: 'Drafts to approve' };
@@ -16,6 +17,8 @@ export function Sheet({ sheet, setSheet, data, errs, status, reload, decide }) {
   });
   const notGoogle = ['tasks', 'calendar', 'mail'].includes(view) && errs[view] === 'google';
   return (
+    <>
+    <ForgeAiGuide view={view} />
     <Modal title={TITLES[view] || 'OpenForge AI'} onClose={close} wide>
       <div className="sheet-body" data-testid={`sheet-${view}`}>
         {notGoogle ? <div className="empty">Google isn't connected. <a href="#/settings/google" onClick={close}>Connect it in Settings</a>.</div>
@@ -27,6 +30,7 @@ export function Sheet({ sheet, setSheet, data, errs, status, reload, decide }) {
           : null}
       </div>
     </Modal>
+    </>
   );
 }
 
