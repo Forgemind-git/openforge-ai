@@ -1,4 +1,4 @@
-// Runtime configuration. Open Forge ships with NO credentials: the two server
+// Runtime configuration. Open Forge AI ships with NO credentials: the two server
 // secrets (session signing + at-rest encryption) come from the environment, or
 // are generated on first boot into the data volume. Every third-party key
 // (OpenAI / Anthropic / Gemini / Google / WhatsApp / Telegram) is entered by each

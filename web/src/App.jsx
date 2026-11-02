@@ -82,7 +82,7 @@ export default function App() {
             <FlaskConical size={15} /><span>Demo</span><span className="knob" />
           </button>
           {meta?.url && (
-            <a className="gh-star" href={meta.url} target="_blank" rel="noreferrer" title="Star Open Forge AI on GitHub" data-testid="gh-star">
+            <a className="gh-star" href={meta.url} target="_blank" rel="noreferrer" title={meta.stars != null ? `Star Open Forge AI on GitHub — ${meta.stars} ${meta.stars === 1 ? 'star' : 'stars'}${meta.starsCheckedAt ? `, checked ${new Date(meta.starsCheckedAt).toLocaleString()}` : ''}` : 'Star Open Forge AI on GitHub'} data-testid="gh-star">
               <Github size={15} /><span className="gh-label">Star</span>
               {meta.stars != null && <span className="gh-count" data-testid="gh-count"><Star size={12} />{meta.stars >= 1000 ? `${(meta.stars / 1000).toFixed(1)}k` : meta.stars}</span>}
             </a>

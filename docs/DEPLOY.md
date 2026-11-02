@@ -201,7 +201,7 @@ docker compose start
 ## 9. Monitoring
 
 - `GET /health` → `{"ok":true}` — the container's own health check uses it.
-- `docker logs -f openforge` — startup line `[open-forge] listening on :3000`, plus errors from integrations.
+- `docker logs -f openforge` — startup line `[open-forge-ai] listening on :3000`, plus errors from integrations.
 - In the app, **Settings** shows each integration's status and the last webhook received for WhatsApp and Telegram.
 
 ## 10. Running a public demo
@@ -231,4 +231,4 @@ The account is created (or its password reset) at every boot and **shown on the 
 | Talk connects then closes | The Gemini key is wrong or the chosen Live model is not available to it — change the model in Settings → Voice. |
 | Chat steps appear all at once at the end | A proxy is buffering server-sent events — see the nginx/Caddy blocks above. |
 | Everyone's saved keys stopped working after a redeploy | `ENCRYPTION_KEY` changed, or the data volume was recreated without its `.encryption_key`. Restore it, or have users re-enter their keys. |
-| The GitHub star button shows no count | The repo is private (GitHub only reports stars for public repos) or `OPENFORGE_GITHUB_REPO` is wrong. |
+| The GitHub star button shows no count | The repo has never been seen public (GitHub only reports stars for public repos) or `OPENFORGE_GITHUB_REPO` is wrong. Once read, the count is stored in the database (`github_stars` table, a row per change) and keeps showing through restarts and GitHub outages. |

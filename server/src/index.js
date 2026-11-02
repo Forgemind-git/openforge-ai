@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const { PORT, GITHUB_REPO } = require('./config');
 require('./db');
+const { getStars } = require('./stars');
 const auth = require('./auth');
 const live = require('./assistant/live');
 
@@ -37,19 +38,12 @@ app.use(helmet({
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 // Star count for the top bar's GitHub button. Fetched here (not by the browser)
-// and cached for an hour, so visitors never hit GitHub's anonymous rate limit.
-// A private or missing repo simply reports stars: null.
-const gh = { at: 0, stars: null };
+// at most hourly, so visitors never hit GitHub's anonymous rate limit, and stored
+// in the database (see stars.js). A repo never seen public reports stars: null.
 app.get('/api/meta', async (req, res) => {
   const repo = /^[\w.-]+\/[\w.-]+$/.test(GITHUB_REPO) ? GITHUB_REPO : null;
-  if (repo && Date.now() - gh.at > 3600e3) {
-    gh.at = Date.now();
-    try {
-      const r = await fetch(`https://api.github.com/repos/${repo}`, { headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'open-forge' }, signal: AbortSignal.timeout(6000) });
-      gh.stars = r.ok ? (await r.json()).stargazers_count ?? null : null;
-    } catch { /* keep the last value */ }
-  }
-  res.json({ repo, url: repo ? `https://github.com/${repo}` : null, stars: repo ? gh.stars : null });
+  const { stars, starsCheckedAt } = repo ? await getStars(repo) : { stars: null, starsCheckedAt: null };
+  res.json({ repo, url: repo ? `https://github.com/${repo}` : null, stars, starsCheckedAt });
 });
 
 // Public (no session): OAuth return + webhooks. Mounted BEFORE the JSON parser,
@@ -80,4 +74,4 @@ app.use((err, req, res, next) => {
 
 const server = http.createServer(app);
 live.attach(server);
-server.listen(PORT, () => console.log(`[open-forge] listening on :${PORT}`));
+server.listen(PORT, () => console.log(`[open-forge-ai] listening on :${PORT}`));

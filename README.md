@@ -90,7 +90,7 @@ Open `http://localhost:3000` (or your `PUBLIC_URL`), **create the admin account*
 | `OPENFORGE_PORT` | `3000` | Host port published by `docker-compose.yml`. |
 | `SESSION_SECRET` | generated | Signs login cookies. Blank = random, stored in the data volume. |
 | `ENCRYPTION_KEY` | generated | Encrypts every saved key (AES-256-GCM). Blank = random, stored in the data volume. **Changing it later makes saved keys unreadable.** |
-| `OPENFORGE_GITHUB_REPO` | `Forgemind-git/open-forge` | Repo for the GitHub star button in the top bar; `none` hides it. |
+| `OPENFORGE_GITHUB_REPO` | `Forgemind-git/open-forge` | Repo for the GitHub star button in the top bar; `none` hides it. The star count is checked hourly and stored in the database. |
 | `DEMO_LOGIN_EMAIL`, `DEMO_LOGIN_PASSWORD` | off | For a public demo only: seeds that account at boot and **shows** its email and password on the sign-in page. Leave blank for real use. |
 | `OPENFORGE_HOST`, `TRAEFIK_NETWORK`, `TRAEFIK_CERTRESOLVER` | — | Only for `docker-compose.traefik.yml`. |
 
